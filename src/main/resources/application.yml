@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: glaze
+    password: dalmatian
+    url: jdbc:postgresql://localhost:5432/connect
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
