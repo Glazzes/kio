@@ -1,6 +1,5 @@
 package com.kio.shared.utils
 
-import org.springframework.web.multipart.MultipartFile
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -12,19 +11,18 @@ import java.nio.file.Paths
 class DiskUtil {
 
     companion object{
-        fun saveFileToDisk(file: MultipartFile){
+        fun saveFileToDisk(file: FileInputStream, filename: String){
             try{
-                (file.inputStream as FileInputStream).use { fic ->
-                    val inputChannel = fic.channel
-                    val output = FileOutputStream("${Constants.DEFAULT_DIRECTORY}${file.originalFilename}")
+                file.channel.use { inputChannel ->
+                    val outputChannel = FileOutputStream("${Constants.DEFAULT_DIRECTORY}${filename}")
+                        .channel
 
-                    output.use { foc ->
-                        val outputChannel = foc.channel
+                    outputChannel.use {
                         val byteBuffer = ByteBuffer.allocateDirect(Constants.BYTEBUFFER_CAPACITY)
 
                         while ((inputChannel.read(byteBuffer)) != -1){
                             byteBuffer.flip()
-                            outputChannel.write(byteBuffer)
+                            it.write(byteBuffer)
                             byteBuffer.clear()
                         }
                     }

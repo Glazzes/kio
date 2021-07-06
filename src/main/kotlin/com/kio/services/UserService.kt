@@ -4,9 +4,9 @@ import com.kio.entities.User
 import com.kio.entities.models.SignUpRequest
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.BadRequestException
-import com.kio.shared.exception.UserNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.util.*
 import javax.transaction.Transactional
 
 @Service
@@ -14,21 +14,23 @@ import javax.transaction.Transactional
 class UserService(val userRepository: UserRepository, val passwordEncoder: PasswordEncoder){
 
     fun save(signUpRequest: SignUpRequest){
-        if(userRepository.existsByEmail(signUpRequest.email)){
-            throw BadRequestException("Email is already in use.")
-        }
-
-        if(userRepository.existsByUsername(signUpRequest.username)){
-            throw BadRequestException("Username is already in use.")
-        }
+        val encodedPassword = passwordEncoder.encode(signUpRequest.password)
 
         val newUser = User(
             username = signUpRequest.username,
-            password = signUpRequest.password,
+            password = encodedPassword,
             email = signUpRequest.email
         )
 
         userRepository.save(newUser)
+    }
+
+    fun findByUsername(username: String): Optional<User>{
+        return userRepository.findById(username)
+    }
+
+    fun existsByEmail(email: String): Boolean {
+        return userRepository.existsByEmail(email)
     }
 
     fun deleteById(id: String){

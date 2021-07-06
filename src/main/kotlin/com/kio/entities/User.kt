@@ -11,7 +11,7 @@ import javax.persistence.*
         UniqueConstraint(name = "users_uq_email", columnNames = ["email"])
     ]
 )
-data class User(
+class User(
     @Id
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")

@@ -5,35 +5,30 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import java.io.FileNotFoundException
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RestControllerAdvice
 class ExceptionHandler {
 
     @ExceptionHandler(value = [BadRequestException::class])
     fun handleBadRequestException(e: BadRequestException): ResponseEntity<ExceptionDetails>{
-        val details = ExceptionDetails(e.message, LocalDate.now())
+        val details = ExceptionDetails(e.message, LocalDateTime.now())
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(details)
     }
 
-    @ExceptionHandler(value = [UserNotFoundException::class])
-    fun handleUserNotFoundException(): ResponseEntity<Unit>{
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .build()
-    }
+    @ExceptionHandler(value = [NotFoundException::class, FileNotFoundException::class])
+    fun handleUserNotFoundException(e: Exception): ResponseEntity<ExceptionDetails>{
+        val details = ExceptionDetails(e.message, LocalDateTime.now())
 
-    @ExceptionHandler(value = [FileNotFoundException::class])
-    fun handleFileNotFoundException(e: FileNotFoundException): ResponseEntity<ExceptionDetails> {
-        val details = ExceptionDetails(e.message, LocalDate.now())
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(details)
     }
 
     data class ExceptionDetails(
         val causedBy: String?,
-        val throwAt: LocalDate,
+        val throwAt: LocalDateTime,
     )
 
 }

@@ -6,7 +6,7 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "folders")
-data class Folder(
+class Folder(
 
     @Id
     @GeneratedValue(generator = "uuid")
@@ -20,8 +20,13 @@ data class Folder(
     var owner: User? = null,
 
     @OneToMany
+    @JoinTable(
+        name = "folder_subfolders",
+        joinColumns = [JoinColumn(name = "base_folder")],
+        inverseJoinColumns = [JoinColumn(name = "sub_folder")]
+    )
     var subFolders: MutableList<Folder> = mutableListOf(),
 
-    @OneToMany
+    @OneToMany(mappedBy = "baseFolder")
     var files: MutableList<File> = mutableListOf()
 )
