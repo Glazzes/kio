@@ -10,8 +10,8 @@ import javax.transaction.Transactional
 @Transactional
 class FolderService(val folderRepository: FolderRepository){
 
-    fun saveNewFolder(folderName: String): Folder{
-        val newFolder = Folder(folderName = folderName, createdAt = LocalDate.now())
+    fun save(folderName: String): Folder{
+        val newFolder = Folder(folderName = folderName)
         return folderRepository.save(newFolder)
     }
 

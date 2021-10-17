@@ -33,13 +33,8 @@ class UserService(val userRepository: UserRepository, val passwordEncoder: Passw
         return userRepository.existsByEmail(email)
     }
 
-    fun deleteById(id: String){
-        if(userRepository.existsById(id)){
-            userRepository.deleteById(id)
-            return
-        }
-
-        throw BadRequestException("Can not delete user with id $id because it does not exists")
+    fun existsByUsername(username: String): Boolean {
+        return userRepository.existsByUsername(username)
     }
 
 }

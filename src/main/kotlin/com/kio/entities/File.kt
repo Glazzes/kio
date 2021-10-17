@@ -12,23 +12,17 @@ class File(
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
     var id: String? = null,
+
+    @Column(nullable = false)
     var filename: String? = null,
 
-    @Column(updatable = false)
+    @Column(name = "original_filename", updatable = false)
     var originalFilename: String? = null,
 
     @Column(updatable = false)
     var size: Long? = null,
 
-    @Column(name = "uploaded_at", nullable = false, updatable = false)
-    var uploadedAt: LocalDate = LocalDate.now(),
-
-    @Column(name = "last_modified", nullable = false)
-    var lastModified: LocalDate = LocalDate.now(),
-
     @ManyToOne
+    @JoinColumn(name = "fk_folder_id", referencedColumnName = "id")
     var baseFolder: Folder? = null,
-
-    @ManyToOne
-    var uploadedBy: User? = null
-)
+): Auditor()

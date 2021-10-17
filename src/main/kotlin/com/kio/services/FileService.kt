@@ -37,7 +37,6 @@ class FileService (val fileRepository: FileRepository){
             .ifPresentOrElse(
                 {
                     it.filename = filename
-                    it.lastModified = LocalDate.now()
                 },
                 {
                     val errorMessage = "File with $id could not be found"

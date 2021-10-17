@@ -1,24 +1,27 @@
 package com.kio.configuration.security
 
+import com.kio.entities.User
 import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
+import java.lang.IllegalArgumentException
 
-class KioUserDetails(
-    private val username: String,
-    private val password: String,
-    private val authorities: MutableCollection<out GrantedAuthority>
-    ) : UserDetails {
+class SecurityUserAdapter(val user: User) : UserDetails {
 
     override fun getUsername(): String {
-        return this.username
+        return user.username ?: throw IllegalArgumentException("Username must not be null")
     }
 
     override fun getAuthorities(): MutableCollection<out GrantedAuthority> {
-       return this.authorities
+       return mutableListOf<GrantedAuthority>(SimpleGrantedAuthority("user"))
     }
 
     override fun getPassword(): String {
-        return this.password
+        return user.password ?: throw IllegalArgumentException("Username must not be null")
+    }
+
+    fun getAuthenticatedUser(): User{
+        return user
     }
 
     override fun isAccountNonExpired(): Boolean {

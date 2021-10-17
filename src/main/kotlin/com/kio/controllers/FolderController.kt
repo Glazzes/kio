@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.RestController
 class FolderController(val folderService: FolderService) {
 
     @PostMapping
-    fun createNewFolder(@RequestParam folderName: String): ResponseEntity<Folder> {
+    fun createNewFolder(@RequestParam folderName: String): ResponseEntity<*> {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(folderService.saveNewFolder(folderName))
+            .body(folderService.save(folderName))
     }
-
-
 
 }
