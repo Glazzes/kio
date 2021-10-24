@@ -41,6 +41,10 @@ class DiskUtil {
             }
         }
 
+        fun deleteFolderFromDisk(originalFolderName: String){
+            Files.deleteIfExists(Paths.get(originalFolderName))
+        }
+
     }
 
 }

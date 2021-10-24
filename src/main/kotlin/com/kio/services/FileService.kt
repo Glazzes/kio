@@ -16,11 +16,11 @@ import javax.transaction.Transactional
 class FileService (val fileRepository: FileRepository){
 
     @Transactional(rollbackOn = [IOException::class, RuntimeException::class])
-    fun save(file: FileInputStream, filename: String?, size: Long){
+    fun save(file: FileInputStream, filename: String, size: Long){
         Optional.ofNullable(filename)
             .ifPresentOrElse(
                 {
-                    val newFile = File(filename = filename, size = size)
+                    val newFile = File(filename = filename, size = size, originalFilename = filename)
                     DiskUtil.saveFileToDisk(file, it)
                     fileRepository.save(newFile)
                 },
@@ -32,17 +32,12 @@ class FileService (val fileRepository: FileRepository){
         return fileRepository.findById(id)
     }
 
-    fun editFile(id: String, filename: String) {
-        findById(id)
-            .ifPresentOrElse(
-                {
-                    it.filename = filename
-                },
-                {
-                    val errorMessage = "File with $id could not be found"
-                    throw NotFoundException(errorMessage)
-                }
-            )
+    fun renameFile(fileId: String, newFilename: String): File {
+        val file = fileRepository.findById(fileId)
+            .orElseThrow {throw NotFoundException("Can not rename file with $fileId because it does not exists.")}
+
+        file.apply { filename =  newFilename}
+        return file
     }
 
     @Transactional(rollbackOn = [FileNotFoundException::class, RuntimeException::class])
@@ -58,6 +53,11 @@ class FileService (val fileRepository: FileRepository){
             },
             {throw IllegalArgumentException("File with id $id doesn't not exists.") }
         )
+    }
+
+    fun deleteFile(file: File){
+        fileRepository.delete(file)
+        DiskUtil.deleteFileFromDisk(file.originalFilename)
     }
 
 }

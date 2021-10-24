@@ -11,7 +11,9 @@ class Folder(
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
     var id: String? = null,
-    var folderName: String? = null,
+
+    var originalFolderName: String,
+    var folderName: String,
 
     @OneToMany
     @JoinTable(

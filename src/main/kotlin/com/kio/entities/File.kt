@@ -13,11 +13,10 @@ class File(
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
     var id: String? = null,
 
-    @Column(nullable = false)
-    var filename: String? = null,
+    var filename: String,
 
     @Column(name = "original_filename", updatable = false)
-    var originalFilename: String? = null,
+    var originalFilename: String,
 
     @Column(updatable = false)
     var size: Long? = null,
