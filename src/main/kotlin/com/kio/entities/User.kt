@@ -18,16 +18,18 @@ class User(
     var id: String? = null,
 
     @Column(name = "username", nullable = false)
-    var username: String? = null,
+    var username: String,
 
     @Column(name = "password", nullable = false)
-    var password: String? = null,
+    var password: String,
 
     @Column(name = "email", nullable = false)
-    var email: String? = null,
+    var email: String,
 
     @Column(name = "nickname")
-    var nickname: String? = username,
+    var nickname: String,
 
-    var profilePicture: String? = null,
+    var spaceUsed: Long = 0,
+
+    var profilePicture: String = "none",
 )

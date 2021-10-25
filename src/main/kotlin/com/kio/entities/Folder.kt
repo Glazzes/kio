@@ -14,6 +14,7 @@ class Folder(
 
     var originalFolderName: String,
     var folderName: String,
+    var spaceUsed: Long = 0,
 
     @OneToMany
     @JoinTable(

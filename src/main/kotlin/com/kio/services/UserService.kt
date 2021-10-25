@@ -1,9 +1,9 @@
 package com.kio.services
 
+import com.kio.dto.create.CreatedUserDTO
 import com.kio.entities.User
 import com.kio.entities.models.SignUpRequest
 import com.kio.repositories.UserRepository
-import com.kio.shared.exception.BadRequestException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.*
@@ -13,16 +13,23 @@ import javax.transaction.Transactional
 @Transactional
 class UserService(val userRepository: UserRepository, val passwordEncoder: PasswordEncoder){
 
-    fun save(signUpRequest: SignUpRequest){
+    fun save(signUpRequest: SignUpRequest): CreatedUserDTO {
         val encodedPassword = passwordEncoder.encode(signUpRequest.password)
 
         val newUser = User(
             username = signUpRequest.username,
             password = encodedPassword,
-            email = signUpRequest.email
+            email = signUpRequest.email,
+            nickname = signUpRequest.username
         )
 
-        userRepository.save(newUser)
+        val createdUser = userRepository.save(newUser)
+        return CreatedUserDTO(
+            createdUser.username,
+            createdUser.username,
+            createdUser.spaceUsed,
+            createdUser.profilePicture
+        )
     }
 
     fun findByUsername(username: String): Optional<User>{

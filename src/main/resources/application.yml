@@ -1,4 +1,14 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
 spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+      enabled: true
   datasource:
     driver-class-name: org.postgresql.Driver
     username: glaze

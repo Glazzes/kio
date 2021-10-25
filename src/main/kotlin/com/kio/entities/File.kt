@@ -1,7 +1,6 @@
 package com.kio.entities
 
 import org.hibernate.annotations.GenericGenerator
-import java.time.LocalDate
 import javax.persistence.*
 
 @Entity
@@ -19,9 +18,9 @@ class File(
     var originalFilename: String,
 
     @Column(updatable = false)
-    var size: Long? = null,
+    var size: Long,
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_folder_id", referencedColumnName = "id")
     var baseFolder: Folder? = null,
 ): Auditor()

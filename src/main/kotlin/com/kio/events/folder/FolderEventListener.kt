@@ -20,7 +20,7 @@ class FolderEventListener {
     private fun deleteFolder(folder: Folder){
         for (file in folder.files) fileService.deleteFile(file)
         for(subFolder in folder.subFolders) deleteFolder(subFolder)
-        folderService.deleteFolder(folder)
+        folderService.delete(folder)
     }
 
 }
