@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "kio.store.folder",
+      "type": "java.lang.String",
+      "description": "File system's path to the folder that will be used as the root store"
+    }
+  ]
+}

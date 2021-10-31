@@ -12,7 +12,9 @@ class Folder(
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
     var id: String? = null,
 
+    @Column(name = "original_folder_name", updatable = false)
     var originalFolderName: String,
+
     var folderName: String,
     var spaceUsed: Long = 0,
 
@@ -24,6 +26,6 @@ class Folder(
     )
     var subFolders: MutableList<Folder> = mutableListOf(),
 
-    @OneToMany(mappedBy = "baseFolder")
+    @OneToMany(mappedBy = "parentFolder")
     var files: MutableList<File> = mutableListOf()
 ): Auditor()

@@ -1,5 +1,6 @@
 package com.kio.entities
 
+import com.kio.events.user.UserEntityEventListener
 import org.hibernate.annotations.GenericGenerator
 import javax.persistence.*
 
@@ -11,13 +12,14 @@ import javax.persistence.*
         UniqueConstraint(name = "users_uq_email", columnNames = ["email"])
     ]
 )
+@EntityListeners(UserEntityEventListener::class)
 class User(
     @Id
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
     var id: String? = null,
 
-    @Column(name = "username", nullable = false)
+    @Column(name = "username", nullable = false, updatable = false)
     var username: String,
 
     @Column(name = "password", nullable = false)

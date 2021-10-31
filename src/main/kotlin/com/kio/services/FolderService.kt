@@ -17,7 +17,6 @@ import javax.transaction.Transactional
 @Transactional
 class FolderService{
     @Autowired private lateinit var folderRepository: FolderRepository
-    @Autowired private lateinit var folderEventPublisher: FolderApplicationPublisher
 
     fun save(parentFolderId: String, folderName: String): CreatedFolderDTO {
         val newFolder = Folder(folderName = folderName, originalFolderName = folderName)
@@ -51,9 +50,10 @@ class FolderService{
     }
 
     fun deleteById(folderId: String){
+        // TODO make a refactor here because the folder publisher can not be autowired
         folderRepository.findById(folderId)
             .ifPresentOrElse(
-                { folderEventPublisher.multicastEvent(FolderDeleteEvent(it)) },
+                { println(it) },
                 {throw NotFoundException("Folder with id $folderId can not be deleted because it does not exists")}
             )
     }
