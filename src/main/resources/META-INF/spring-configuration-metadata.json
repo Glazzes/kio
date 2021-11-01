@@ -4,6 +4,26 @@
       "name": "kio.store.folder",
       "type": "java.lang.String",
       "description": "File system's path to the folder that will be used as the root store"
+    },
+    {
+      "name": "kio.oauth.client.id",
+      "type": "java.lang.String",
+      "description": "Id of the InMemory OAuth client"
+    },
+    {
+      "name": "kio.oauth.client.secret",
+      "type": "java.lang.String",
+      "description": "Secret of the InMemory OAuth client"
+    },
+    {
+      "name": "kio.oauth.client.access-token-validity-time",
+      "type": "java.lang.Integer",
+      "description": "Time expressed in seconds that represent how much an access token will be active"
+    },
+    {
+      "name": "kio.oauth.client.refresh-token-validity-time",
+      "type": "java.lang.Integer",
+      "description": "Time expressed in seconds that represent how much an access token will be active"
     }
   ]
 }

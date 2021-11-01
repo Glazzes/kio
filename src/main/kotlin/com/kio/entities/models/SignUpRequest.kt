@@ -17,4 +17,5 @@ class SignUpRequest(
 
     @get:Length(min = 8, max = 100, message = "Password must be at least 8 characters long and less than 100")
     val password: String
+
 )

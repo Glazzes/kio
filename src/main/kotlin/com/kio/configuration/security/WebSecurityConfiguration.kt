@@ -18,14 +18,17 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.web.cors.CorsConfiguration
 
-@EnableWebSecurity
+@Configuration
 class WebSecurityConfiguration : WebSecurityConfigurerAdapter() {
 
     override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.inMemoryAuthentication()
-            .withUser("user")
-            .password("password")
-            .roles("USER")
+        val glaze = User.builder()
+            .username("glaze")
+            .password(passwordEncoder().encode("pass"))
+            .authorities("read")
+            .build()
+
+        auth.userDetailsService(InMemoryUserDetailsManager(glaze))
     }
 
     override fun configure(http: HttpSecurity) {
@@ -52,7 +55,7 @@ class WebSecurityConfiguration : WebSecurityConfigurerAdapter() {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder {
-        return NoOpPasswordEncoder.getInstance()
+        return BCryptPasswordEncoder()
     }
 
     @Bean

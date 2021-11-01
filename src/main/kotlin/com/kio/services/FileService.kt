@@ -28,7 +28,12 @@ class FileService (
         val filename = Optional.ofNullable(file.originalFilename)
             .orElseThrow { IllegalStateException("Can no save file because the filename must not be null") }
 
-        val newFile = File(filename = filename, size = file.size, originalFilename = filename)
+        val newFile = File(
+            filename = filename,
+            size = file.size,
+            originalFilename = filename,
+            mimeType = file.contentType
+        )
         DiskUtil.saveFileToDisk(fileInputStream, filename)
 
         val createdFile = fileRepository.save(newFile)

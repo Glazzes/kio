@@ -4,12 +4,11 @@ import com.kio.entities.User
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
-import java.lang.IllegalArgumentException
 
 class SecurityUserAdapter(val user: User) : UserDetails {
 
     override fun getUsername(): String {
-        return user.username ?: throw IllegalArgumentException("Username must not be null")
+        return user.username
     }
 
     override fun getAuthorities(): MutableCollection<out GrantedAuthority> {
@@ -17,11 +16,7 @@ class SecurityUserAdapter(val user: User) : UserDetails {
     }
 
     override fun getPassword(): String {
-        return user.password ?: throw IllegalArgumentException("Username must not be null")
-    }
-
-    fun getAuthenticatedUser(): User{
-        return user
+        return user.password
     }
 
     override fun isAccountNonExpired(): Boolean {

@@ -1,3 +1,13 @@
+kio:
+  oauth:
+    client:
+      id: kio-oauth-client
+      secret: 3xnWzGJE94qMWTvpp5mGeqsmFukwXR
+      access-token-validity-time: 900
+      refresh-token-validity-time: 604800
+  store:
+    folder: /home/glaze/Escritorio/store
+
 spring:
   servlet:
     multipart:
@@ -13,7 +23,3 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
-
-kio:
-  store:
-    folder: /home/glaze/Escritorio/store
