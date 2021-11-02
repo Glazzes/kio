@@ -3,8 +3,6 @@ package com.kio.services
 import com.kio.dto.create.CreatedFolderDTO
 import com.kio.dto.RenamedEntityDTO
 import com.kio.entities.Folder
-import com.kio.events.folder.FolderApplicationPublisher
-import com.kio.events.folder.FolderDeleteEvent
 import com.kio.repositories.FolderRepository
 import com.kio.shared.utils.DiskUtil
 import javassist.NotFoundException
