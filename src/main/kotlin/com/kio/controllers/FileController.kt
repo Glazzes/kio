@@ -1,5 +1,6 @@
 package com.kio.controllers
 
+import com.amazonaws.services.s3.model.PutObjectResult
 import com.kio.dto.RenamedEntityDTO
 import com.kio.dto.create.CreatedFileDTO
 import com.kio.dto.find.FileDTO
@@ -12,6 +13,12 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/file")
 class FileController (val fileService: FileService){
+
+    @PostMapping("/s3/up")
+    fun s3Up(@RequestPart file: MultipartFile): ResponseEntity<*> {
+        return ResponseEntity.ok()
+            .body(fileService.saves3(file))
+    }
 
     @PostMapping
     fun save(

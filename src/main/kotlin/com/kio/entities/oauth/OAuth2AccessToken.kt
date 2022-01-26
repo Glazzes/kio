@@ -10,13 +10,16 @@ import javax.persistence.*
 class OAuth2AccessToken(
         @Column(name = "token_id")
         var tokenId: String? = null,
+
         @Lob
         var token: Blob? = null,
+
         @Id
         @Column(name = "authentication_id", nullable = false)
         var authenticationId: String? = null,
+
         @OneToOne
-        @JoinColumn(name = "user_name", referencedColumnName = "email")
+        @JoinColumn(name = "user_name", referencedColumnName = "username")
         var userName: User? = null,
 
         @Column(name = "client_id")
@@ -24,6 +27,7 @@ class OAuth2AccessToken(
 
         @Lob
         var authentication: Blob? = null,
+
         @Column(name = "refresh_token")
         var refreshToken: String? = null
 )

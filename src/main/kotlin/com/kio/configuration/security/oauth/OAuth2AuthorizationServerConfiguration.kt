@@ -3,6 +3,7 @@
 package com.kio.configuration.security.oauth
 
 import com.kio.configuration.properties.OAuthConfigurationProperties
+import com.kio.configuration.security.SecurityUserDetailsService
 import com.kio.shared.enums.OAuthGrantType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,6 +15,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.A
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer
+import org.springframework.security.oauth2.provider.approval.JdbcApprovalStore
 import org.springframework.security.oauth2.provider.token.TokenStore
 import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
@@ -42,8 +44,8 @@ class OAuth2AuthorizationServerConfiguration(
         clients.inMemory()
             .withClient(oAuthConfigurationProperties.id)
             .secret(passwordEncoder.encode(oAuthConfigurationProperties.secret))
+            .resourceIds("kio-id")
             .authorities("USER")
-            .resourceIds("my_resource_id")
             .scopes("read")
             .authorizedGrantTypes(
                 OAuthGrantType.REFRESH_TOKEN.grant,
@@ -57,14 +59,9 @@ class OAuth2AuthorizationServerConfiguration(
     }
 
     override fun configure(endpoints: AuthorizationServerEndpointsConfigurer) {
-        val glaze = User.builder()
-            .username("glaze")
-            .password(passwordEncoder.encode("pass"))
-            .authorities("read")
-            .build()
-
         endpoints.authenticationManager(authenticationManager)
-            .userDetailsService(InMemoryUserDetailsManager(glaze))
+            .approvalStore(JdbcApprovalStore(datasource))
             .tokenStore(tokenStore())
     }
+
 }

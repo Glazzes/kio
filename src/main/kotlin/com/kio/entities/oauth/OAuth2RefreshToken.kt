@@ -1,17 +1,21 @@
 package com.kio.entities.oauth
 
-import java.sql.Blob
 import javax.persistence.*
 
 @Entity
 @Table(name = "oauth_refresh_token")
 class OAuth2RefreshToken(
-        @Id @GeneratedValue
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Long? = null,
+
         @Column(name = "token_id")
         var tokenId: String? = null,
+
         @Lob
-        var token: Blob? = null,
+        var token: ByteArray? = null,
+
         @Lob
-        var authentication: Blob? = null
+        var authentication: ByteArray? = null
 )

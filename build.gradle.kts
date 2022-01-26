@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
 	id("org.springframework.boot") version "2.5.1"
 	id("io.spring.dependency-management") version "1.0.11.RELEASE"
+	id ("com.google.cloud.tools.jib") version "3.2.0"
 	kotlin("jvm") version "1.5.10"
 	kotlin("plugin.spring") version "1.5.10"
 	kotlin("plugin.jpa") version "1.5.10"
@@ -19,7 +20,7 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.security.oauth:spring-security-oauth2:2.5.1.RELEASE")
-	// implementation("org.springframework.security:spring-security-jwt:1.1.1.RELEASE")
+	implementation("com.amazonaws:aws-java-sdk-s3:1.12.146")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -32,6 +33,17 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
+	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+}
+
+jib {
+	from {
+		image = "openjdk:17-oracle"
+	}
+
+	to {
+		image = "kio:latest"
+	}
 }
 
 tasks.withType<KotlinCompile> {

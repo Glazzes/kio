@@ -2,6 +2,7 @@ package com.kio.entities
 
 import com.kio.events.user.UserEntityEventListener
 import org.hibernate.annotations.GenericGenerator
+import java.io.Serializable
 import javax.persistence.*
 
 @Entity(name = "User")
@@ -14,6 +15,7 @@ import javax.persistence.*
 )
 @EntityListeners(UserEntityEventListener::class)
 class User(
+
     @Id
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "org.hibernate.id.UUIDHexGenerator")
@@ -33,5 +35,7 @@ class User(
 
     var spaceUsed: Long = 0,
 
-    var profilePicture: String = "none",
-)
+    @OneToMany(mappedBy = "users")
+    var profilePicture: MutableSet<ProfilePicture> = HashSet()
+
+) : Serializable

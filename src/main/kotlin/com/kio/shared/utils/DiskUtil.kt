@@ -13,14 +13,13 @@ class DiskUtil {
     companion object{
         fun saveFileToDisk(file: FileInputStream, filename: String){
             try{
-                file.channel.use { inputChannel ->
-                    val outputChannel = FileOutputStream("${Constants.DEFAULT_DIRECTORY}${filename}")
-                        .channel
+                val inputChannel = file.channel
+                val outputChannel = FileOutputStream(filename).channel
 
+                inputChannel.use { iChannel ->
                     outputChannel.use {
                         val byteBuffer = ByteBuffer.allocateDirect(Constants.BYTEBUFFER_CAPACITY)
-
-                        while ((inputChannel.read(byteBuffer)) != -1){
+                        while ((iChannel.read(byteBuffer)) != -1){
                             byteBuffer.flip()
                             it.write(byteBuffer)
                             byteBuffer.clear()

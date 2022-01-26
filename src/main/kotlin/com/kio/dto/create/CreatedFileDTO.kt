@@ -6,5 +6,6 @@ data class CreatedFileDTO(
     val id: String?,
     val filename: String,
     val size: Long,
+    val contentType: String?,
     val createdAt: LocalDate?
 )

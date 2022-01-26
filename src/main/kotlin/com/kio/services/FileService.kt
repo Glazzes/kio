@@ -1,5 +1,9 @@
 package com.kio.services
 
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.ObjectMetadata
+import com.amazonaws.services.s3.model.PutObjectResult
+import com.kio.configuration.aws.AwsProperties
 import com.kio.dto.RenamedEntityDTO
 import com.kio.dto.create.CreatedFileDTO
 import com.kio.dto.find.FileDTO
@@ -19,8 +23,21 @@ import javax.transaction.Transactional
 @Transactional
 class FileService (
     private val fileRepository: FileRepository,
-    private val folderService: FolderService
-    ){
+    private val folderService: FolderService,
+    private val amazons3: AmazonS3,
+    private val awsProperties: AwsProperties
+){
+    data class FileInfo(
+        val filename: String,
+        val url: String,
+        val awsResult: PutObjectResult
+    )
+
+    fun saves3(file: MultipartFile): FileInfo{
+        val result = amazons3.putObject(awsProperties.bucket, file.originalFilename, file.inputStream, ObjectMetadata())
+        val url = "${awsProperties.endpoint}/${awsProperties.bucket}/${file.originalFilename}"
+        return FileInfo(file.originalFilename!!, url, result)
+    }
 
     @Transactional(rollbackOn = [IOException::class, RuntimeException::class])
     fun save(file: MultipartFile, parentFolderId: String): CreatedFileDTO{
@@ -32,20 +49,24 @@ class FileService (
             filename = filename,
             size = file.size,
             originalFilename = filename,
-            mimeType = file.contentType
+            contentType = file.contentType
         )
-        DiskUtil.saveFileToDisk(fileInputStream, filename)
 
         val createdFile = fileRepository.save(newFile)
 
         folderService.findById(parentFolderId)
             .orElseThrow { NotFoundException("Can not save file $filename because folder $parentFolderId does ot exists") }
             .apply { files.add(createdFile) }
+            .let {
+                val finalFilename = "${it.originalFolderName}${newFile.originalFilename}"
+                DiskUtil.saveFileToDisk(fileInputStream, finalFilename)
+            }
 
         return CreatedFileDTO(
             createdFile.id,
             createdFile.filename,
             createdFile.size,
+            createdFile.contentType,
             createdFile.createdAt
         )
     }

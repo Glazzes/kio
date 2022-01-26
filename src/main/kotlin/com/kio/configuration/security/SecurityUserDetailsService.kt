@@ -1,16 +1,17 @@
 package com.kio.configuration.security
 
-import com.kio.services.UserService
-import com.kio.shared.exception.NotFoundException
+import com.kio.repositories.UserRepository
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
 
 @Component
-class SecurityUserDetailsService(private val userService: UserService) : UserDetailsService {
+class SecurityUserDetailsService(private val userRepository: UserRepository) : UserDetailsService {
     override fun loadUserByUsername(username: String): UserDetails {
-        return userService.findByUsername(username)
-            .map { SecurityUserAdapter(it) }
-            .orElseThrow {NotFoundException("Could not find user with username $username")}
+        val user = userRepository.findByUsername(username) ?:
+            throw UsernameNotFoundException("Could not find user with username $username")
+
+        return SecurityUserAdapter(user)
     }
 }

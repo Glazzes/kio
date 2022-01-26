@@ -3,10 +3,26 @@ kio:
     client:
       id: kio-oauth-client
       secret: 3xnWzGJE94qMWTvpp5mGeqsmFukwXR
-      access-token-validity-time: 900
-      refresh-token-validity-time: 604800
+      access-token-validity-time: 1200
+      refresh-token-validity-time: 86400
   store:
-    folder: /home/glaze/Escritorio/store
+    folder: /home/glaze/Escritorio/store/
+
+aws:
+  s3:
+    endpoint: http://192.168.42.80:4566
+    bucket: kio-bucket
+    region: us-east-1
+    access-key: localstack
+    secret-key: localstack
+
+security:
+  oauth2:
+    resource:
+      jwt-key-uri: http://localhost:8080/oauth/token-key
+    client:
+      client-id: rs
+      client-secret: rssecret
 
 spring:
   servlet:

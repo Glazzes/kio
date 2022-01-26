@@ -2,7 +2,6 @@ package com.kio.configuration.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.annotation.Order
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
@@ -13,44 +12,37 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.security.crypto.password.NoOpPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.web.cors.CorsConfiguration
 
 @Configuration
-class WebSecurityConfiguration : WebSecurityConfigurerAdapter() {
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+class WebSecurityConfiguration(
+    private val userDetailsService: SecurityUserDetailsService
+): WebSecurityConfigurerAdapter() {
 
     override fun configure(auth: AuthenticationManagerBuilder) {
-        val glaze = User.builder()
-            .username("glaze")
-            .password(passwordEncoder().encode("pass"))
-            .authorities("read")
-            .build()
-
-        auth.userDetailsService(InMemoryUserDetailsManager(glaze))
+        auth.userDetailsService(userDetailsService)
+            .passwordEncoder(this.passwordEncoder())
     }
 
     override fun configure(http: HttpSecurity) {
-        /* using a custom configurer
-        http.cors { it.configurationSource {
-            val corsConfiguration = CorsConfiguration()
-
-            corsConfiguration.allowCredentials = true
-            corsConfiguration.allowedOrigins = listOf("http://localhost:19006")
-            corsConfiguration.allowedMethods = listOf("GET", "POST", "PATCH", "DELETE", "OPTIONS")
-            corsConfiguration.maxAge = 3600
-
-            corsConfiguration
-        }}
-         */
-
-        http.authorizeRequests()
-            .anyRequest()
-            .authenticated()
-            .and()
-            .httpBasic()
-            .realmName("Ouath server")
+        http.authorizeRequests {
+                it.anyRequest()
+                .permitAll()
+            }
+            .cors {
+                it.configurationSource {
+                    val configuration = CorsConfiguration()
+                    configuration.allowCredentials = true
+                    configuration.allowedOrigins = listOf("http://localhost:19006")
+                    configuration.allowedMethods = listOf("GET", "POST", "PATCH", "DELETE", "OPTIONS")
+                    configuration.maxAge = 3600
+                    configuration
+                }
+            }
+            .httpBasic { it.realmName("Kio realm") }
     }
 
     @Bean

@@ -1,7 +1,6 @@
 package com.kio.entities.oauth
 
 import com.kio.entities.User
-import org.hibernate.annotations.Type
 import javax.persistence.*
 
 @Entity
@@ -17,8 +16,9 @@ class OAuth2ClientToken(
         @Column(name = "authentication_id")
         var authenticationId: String? = null,
 
-        @Column(name = "user_name")
-        var username: String? = null,
+        @OneToOne
+        @JoinColumn(name = "user_name", referencedColumnName = "username")
+        var username: User? = null,
 
         @Column(name = "client_id")
         var clientId: String? = null,

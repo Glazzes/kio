@@ -22,8 +22,8 @@ class File(
     @Column(updatable = false)
     var size: Long,
 
-    @Column(name = "mime_type", nullable = false)
-    var mimeType: String? = null,
+    @Column(name = "content_type", nullable = false)
+    var contentType: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_folder_id", referencedColumnName = "id")
