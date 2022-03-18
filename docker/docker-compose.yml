@@ -1,9 +1,27 @@
 version: "3.7"
 
 services:
+#  kio:
+#    container_name: kio
+#    ports:
+#      - '8080:8080'
+#   depends_on:
+#      - localstack-s3
+#      - postgres
+
+#  postgres:
+#    image: postges:13.3-apine
+#    container_name: postgres
+#    environment:
+#      POSTGRES_USER: glaze
+#      POSTGRES_PASSWORD: dalmatian
+#      POSTGRES_DB: kio
+#    ports:
+#      - '5432:5432'
+
   localstack-s3:
-    container_name: localstack-s3
     image: localstack/localstack:latest
+    container_name: localstack-s3
     environment:
       DEBUG: 1
       USE_SSL: 0

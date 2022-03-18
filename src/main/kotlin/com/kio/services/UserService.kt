@@ -1,39 +1,30 @@
 package com.kio.services
 
-import com.kio.dto.create.CreatedUserDTO
-import com.kio.entities.User
-import com.kio.entities.models.SignUpRequest
+import com.kio.dto.response.save.SavedUserDTO
+import com.kio.dto.request.SignUpRequest
+import com.kio.entities.mongo.UnitSummary
+import com.kio.entities.mongo.User
 import com.kio.repositories.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import java.util.*
-import javax.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional
 class UserService(val userRepository: UserRepository, val passwordEncoder: PasswordEncoder){
 
-    fun save(signUpRequest: SignUpRequest): CreatedUserDTO {
+    fun save(signUpRequest: SignUpRequest): SavedUserDTO {
         val encodedPassword = passwordEncoder.encode(signUpRequest.password)
 
         val newUser = User(
             username = signUpRequest.username,
             password = encodedPassword,
             email = signUpRequest.email,
-            nickname = signUpRequest.username
-        )
+            profilePicture = null,
+            unitSummary = UnitSummary())
 
         val createdUser = userRepository.save(newUser)
-        return CreatedUserDTO(
-            createdUser.username,
-            createdUser.username,
-            createdUser.spaceUsed,
-            createdUser.profilePicture
-        )
-    }
-
-    fun findByUsername(username: String): Optional<User>{
-        return userRepository.findById(username)
+        return SavedUserDTO(createdUser.id!!, createdUser.username, createdUser.email)
     }
 
     fun existsByEmail(email: String): Boolean {

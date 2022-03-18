@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer
 import org.springframework.security.oauth2.provider.approval.JdbcApprovalStore
 import org.springframework.security.oauth2.provider.token.TokenStore
+import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore
 import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import javax.sql.DataSource
@@ -32,7 +33,7 @@ class OAuth2AuthorizationServerConfiguration(
 
     @Bean
     fun tokenStore(): TokenStore{
-        return JdbcTokenStore(datasource)
+        return InMemoryTokenStore()
     }
 
     override fun configure(security: AuthorizationServerSecurityConfigurer) {
@@ -53,14 +54,15 @@ class OAuth2AuthorizationServerConfiguration(
                 OAuthGrantType.AUTHORIZATION_CODE.grant,
                 OAuthGrantType.IMPLICIT.grant
             )
+            .autoApprove(true)
             .accessTokenValiditySeconds(oAuthConfigurationProperties.accessTokenValidityTime)
             .refreshTokenValiditySeconds(oAuthConfigurationProperties.refreshTokenValidityTime)
-            .redirectUris("http://localhost:8080/")
+            .redirectUris("http://localhost:8080/user")
     }
 
     override fun configure(endpoints: AuthorizationServerEndpointsConfigurer) {
         endpoints.authenticationManager(authenticationManager)
-            .approvalStore(JdbcApprovalStore(datasource))
+            //.approvalStore(JdbcApprovalStore(datasource))
             .tokenStore(tokenStore())
     }
 

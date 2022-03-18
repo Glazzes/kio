@@ -1,6 +1,5 @@
 package com.kio.events.file
 
-import com.kio.entities.File
 import javax.persistence.PostRemove
 
 class FileEntityEventListener {

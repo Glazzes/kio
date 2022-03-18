@@ -1,64 +1,61 @@
 package com.kio.services
 
-import com.kio.dto.create.CreatedFolderDTO
-import com.kio.dto.RenamedEntityDTO
-import com.kio.entities.Folder
+import com.kio.dto.response.save.SavedFolderDTO
+import com.kio.dto.response.find.FolderDTO
+import com.kio.entities.mongo.AuditFileMetadata
+import com.kio.entities.mongo.Folder
+import com.kio.entities.mongo.User
+import com.kio.entities.mongo.enums.FileState
+import com.kio.entities.mongo.enums.FolderType
+import com.kio.entities.mongo.enums.Permission
 import com.kio.repositories.FolderRepository
-import com.kio.shared.utils.DiskUtil
-import javassist.NotFoundException
-import org.springframework.beans.factory.annotation.Autowired
+import com.kio.repositories.UserRepository
+import com.kio.shared.exception.IllegalOperationException
+import com.kio.shared.exception.NotFoundException
 import org.springframework.stereotype.Service
-import java.util.*
-import javax.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional
-class FolderService{
-    @Autowired private lateinit var folderRepository: FolderRepository
+class FolderService(
+    private val folderRepository: FolderRepository,
+    private val userRepository: UserRepository
+){
 
-    fun save(parentFolderId: String, folderName: String): CreatedFolderDTO {
-        val newFolder = Folder(folderName = folderName, originalFolderName = folderName)
-        val createdFolder = folderRepository.save(newFolder)
+    fun saveRootFolderForNewUser(user: User) {
+        val rootFolder = Folder(
+            name = "My unit",
+            folderType = FolderType.ROOT_UNIT,
+            metadata = AuditFileMetadata(user.id!!),
+            state = FileState.OWNER)
 
+        folderRepository.save(rootFolder)
+    }
+
+    fun save(parentFolderId: String, name: String): SavedFolderDTO {
         val parentFolder = folderRepository.findById(parentFolderId)
-            .orElseThrow { NotFoundException("""
-            Can not create folder because the parent folder with id $parentFolderId does not exists    
-            """.trimIndent()) }
+            .orElseThrow { NotFoundException("You can not create a sub folder within a folder that does not exists") }
 
-        parentFolder.apply { subFolders.add(createdFolder) }
+        val canCreateFolder = PermissionValidator.canPerformOperation(parentFolder, Permission.CAN_CREATE)
+        if(!canCreateFolder) throw IllegalOperationException("You are not allowed to create a folder within this folder")
 
-        return CreatedFolderDTO(
-            createdFolder.id    ,
-            createdFolder.folderName,
-            createdFolder.spaceUsed,
-            createdFolder.lastModified
-        )
+        val newFolder = Folder(
+            name = name,
+            state = parentFolder.state,
+            coowners = parentFolder.coowners,
+            metadata = AuditFileMetadata(parentFolder.metadata.owner))
+
+        val savedFolder = folderRepository.save(newFolder)
+        parentFolder.subFolders.add(newFolder.id!!)
+        return SavedFolderDTO(savedFolder.id!!, savedFolder.name, savedFolder.metadata.createdAt!!)
     }
 
-    fun findById(id: String): Optional<Folder> {
-        return folderRepository.findById(id)
-    }
+    fun findById(id: String): FolderDTO {
+        val folder = folderRepository.findById(id)
+            .orElseThrow { NotFoundException("We could not found folder $id") }
 
-    fun rename(folderId: String, newFolderName: String): RenamedEntityDTO{
-        val folder = folderRepository.findById(folderId)
-            .orElseThrow {throw NotFoundException("Can not rename folder $folderId because it does not exists")}
-
-        folder.apply { folderName = newFolderName }
-        return RenamedEntityDTO(folder.folderName, folder.lastModified)
-    }
-
-    fun deleteById(folderId: String){
-        // TODO make a refactor here because the folder publisher can not be autowired
-        folderRepository.findById(folderId)
-            .ifPresentOrElse(
-                { println(it) },
-                {throw NotFoundException("Folder with id $folderId can not be deleted because it does not exists")}
-            )
-    }
-
-    fun delete(folder: Folder){
-        folderRepository.delete(folder)
-        DiskUtil.deleteFolderFromDisk(folder.originalFolderName)
+        val canReadFolder = PermissionValidator.canPerformOperation(folder, Permission.CAN_READ)
+        if(!canReadFolder) throw IllegalOperationException("You are not allowed to read this folder")
     }
 
 }

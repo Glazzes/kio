@@ -1,7 +1,5 @@
 package com.kio.events.folder
 
-import com.kio.entities.Folder
-import com.kio.services.FileService
 import com.kio.services.FolderService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener

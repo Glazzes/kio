@@ -10,7 +10,7 @@ kio:
 
 aws:
   s3:
-    endpoint: http://192.168.42.80:4566
+    endpoint: http://10.42.0.1:4566
     bucket: kio-bucket
     region: us-east-1
     access-key: localstack

@@ -1,7 +1,6 @@
 package com.kio.entities.oauth
 
 
-import com.kio.entities.User
 import java.sql.Blob
 import javax.persistence.*
 

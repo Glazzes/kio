@@ -1,0 +1,34 @@
+kio:
+  oauth:
+    client:
+      id: kio-oauth-client
+      secret: 3xnWzGJE94qMWTvpp5mGeqsmFukwXR
+      access-token-validity-time: 1200
+      refresh-token-validity-time: 86400
+  store:
+    folder: /home/glaze/Escritorio/store/
+
+aws:
+  s3:
+    endpoint: http://localstack-s3:4566
+    bucket: kio-bucket
+    region: us-east-1
+    access-key: localstack
+    secret-key: localstack
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+      enabled: true
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: glaze
+    password: dalmatian
+    url: jdbc:postgresql://postgres:5432/kio
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    database-platform: com.kio.configuration.pg.CustomDialect

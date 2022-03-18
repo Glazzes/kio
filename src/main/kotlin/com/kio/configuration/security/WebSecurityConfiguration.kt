@@ -43,6 +43,9 @@ class WebSecurityConfiguration(
                 }
             }
             .httpBasic { it.realmName("Kio realm") }
+            .oauth2ResourceServer {
+                it.opaqueToken { op -> op.introspectionUri("").introspectionClientCredentials("", "") }
+            }
     }
 
     @Bean

@@ -1,6 +1,5 @@
 package com.kio.entities.oauth
 
-import com.kio.entities.User
 import javax.persistence.*
 
 @Entity

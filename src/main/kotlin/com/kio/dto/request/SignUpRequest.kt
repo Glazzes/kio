@@ -1,4 +1,4 @@
-package com.kio.entities.models
+package com.kio.dto.request
 
 import com.kio.shared.validators.emailvalidator.EmailMustNotBeRegistered
 import com.kio.shared.validators.usernamevalidator.UsernameMustNotBeRegistered

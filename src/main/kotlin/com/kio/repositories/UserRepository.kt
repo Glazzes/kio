@@ -1,11 +1,14 @@
 package com.kio.repositories
 
-import com.kio.entities.User
-import org.springframework.data.jpa.repository.JpaRepository
-import java.util.*
+import com.kio.entities.mongo.User
+import com.kio.entities.mongo.projections.ContributorProjection
+import org.springframework.data.mongodb.repository.MongoRepository
 
-interface UserRepository : JpaRepository<User, String> {
+interface UserRepository : MongoRepository<User, String> {
+
     fun existsByEmail(email: String): Boolean
     fun existsByUsername(username: String): Boolean
-    fun findByUsername(username: String): User?
+
+    // used to get user dtos for a folder dto
+    fun findByIdIn(ids: List<String>): Set<ContributorProjection>
 }

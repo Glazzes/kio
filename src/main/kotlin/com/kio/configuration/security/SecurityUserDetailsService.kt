@@ -1,6 +1,5 @@
 package com.kio.configuration.security
 
-import com.kio.repositories.UserRepository
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -12,6 +11,6 @@ class SecurityUserDetailsService(private val userRepository: UserRepository) : U
         val user = userRepository.findByUsername(username) ?:
             throw UsernameNotFoundException("Could not find user with username $username")
 
-        return SecurityUserAdapter(user)
+        return UserToUserDetailsAdapter(user)
     }
 }

@@ -1,9 +1,9 @@
 package com.kio.controllers
 
-import com.amazonaws.services.s3.model.PutObjectResult
-import com.kio.dto.RenamedEntityDTO
-import com.kio.dto.create.CreatedFileDTO
-import com.kio.dto.find.FileDTO
+import com.kio.dto.response.find.FileDTO
+import com.kio.dto.response.modify.RenamedEntityDTO
+import com.kio.dto.response.save.SavedFileDTO
+import com.kio.dto.request.GenericResourceRequest
 import com.kio.services.FileService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,20 +11,14 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
 @RestController
-@RequestMapping("/file")
+@RequestMapping("/api/v1/files")
 class FileController (val fileService: FileService){
-
-    @PostMapping("/s3/up")
-    fun s3Up(@RequestPart file: MultipartFile): ResponseEntity<*> {
-        return ResponseEntity.ok()
-            .body(fileService.saves3(file))
-    }
 
     @PostMapping
     fun save(
         @RequestParam(name = "parent") parentFolderId: String,
         @RequestParam file: MultipartFile,
-    ): ResponseEntity<CreatedFileDTO> {
+    ): ResponseEntity<SavedFileDTO> {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(fileService.save(file, parentFolderId))
     }
@@ -41,12 +35,19 @@ class FileController (val fileService: FileService){
         @RequestParam filename: String
     ): ResponseEntity<RenamedEntityDTO>{
         return ResponseEntity.status(HttpStatus.OK)
-            .body(fileService.renameFile(fileId, filename))
+            .body(fileService.rename(fileId, filename))
     }
 
     @DeleteMapping(path = ["/{id}"])
-    fun delete(@PathVariable(name ="id") fileId: String): ResponseEntity<Unit>{
-        fileService.deleteFileById(fileId)
+    fun delete(@PathVariable id: String): ResponseEntity<Unit>{
+        fileService.deleteById(id)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            .build()
+    }
+
+    @DeleteMapping(path = ["/many"])
+    fun deleteMany(@RequestBody deleteRequest: GenericResourceRequest) : ResponseEntity<Unit> {
+        fileService.deleteMany(deleteRequest)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

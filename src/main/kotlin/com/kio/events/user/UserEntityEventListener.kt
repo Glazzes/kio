@@ -1,12 +1,13 @@
 package com.kio.events.user
 
-import com.kio.entities.User
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
 import javax.persistence.PostPersist
 import javax.persistence.PostRemove
 
+@Component
 class UserEntityEventListener {
     @Value("\${kio.store.folder}") private lateinit var root: String
 
@@ -21,9 +22,7 @@ class UserEntityEventListener {
     @PostRemove
     fun onUserDeleted(user: User){
         val path = Paths.get(root, user.id)
-        if(Files.exists(path)){
-            Files.deleteIfExists(path)
-        }
+        Files.deleteIfExists(path)
     }
 
 }

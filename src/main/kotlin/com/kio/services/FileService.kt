@@ -2,112 +2,115 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.ObjectMetadata
-import com.amazonaws.services.s3.model.PutObjectResult
-import com.kio.configuration.aws.AwsProperties
-import com.kio.dto.RenamedEntityDTO
-import com.kio.dto.create.CreatedFileDTO
-import com.kio.dto.find.FileDTO
-import com.kio.dto.find.UserDTO
-import com.kio.entities.File
-import com.kio.repositories.FileRepository
-import com.kio.shared.exception.AssociationException
+import com.kio.dto.response.find.FileDTO
+import com.kio.dto.response.modify.RenamedEntityDTO
+import com.kio.dto.response.save.SavedFileDTO
+import com.kio.dto.request.GenericResourceRequest
+import com.kio.entities.mongo.File
+import com.kio.entities.mongo.AuditFileMetadata
+import com.kio.entities.mongo.enums.Permission
+import com.kio.repositories.MongoFileRepository
+import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.DiskUtil
+import com.kio.shared.utils.FileUtils
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
-import java.io.*
+import java.lang.IllegalStateException
 import java.util.*
-import javax.transaction.Transactional
+import kotlin.UnsupportedOperationException
 
 @Service
 @Transactional
-class FileService (
-    private val fileRepository: FileRepository,
-    private val folderService: FolderService,
-    private val amazons3: AmazonS3,
-    private val awsProperties: AwsProperties
+class FileService(
+    private val fileRepository: MongoFileRepository,
+    private val folderRepository: FolderRepository,
+    private val s3: AmazonS3
 ){
-    data class FileInfo(
-        val filename: String,
-        val url: String,
-        val awsResult: PutObjectResult
-    )
+    private val kioBucket = "files.kio.com"
 
-    fun saves3(file: MultipartFile): FileInfo{
-        val result = amazons3.putObject(awsProperties.bucket, file.originalFilename, file.inputStream, ObjectMetadata())
-        val url = "${awsProperties.endpoint}/${awsProperties.bucket}/${file.originalFilename}"
-        return FileInfo(file.originalFilename!!, url, result)
-    }
+    fun save(file: MultipartFile, parentFolderId: String): SavedFileDTO {
+        val parentFolder = folderRepository.findById(parentFolderId)
+            .orElseThrow { NotFoundException("Can not save a file to a folder that does not exists $parentFolderId") }
 
-    @Transactional(rollbackOn = [IOException::class, RuntimeException::class])
-    fun save(file: MultipartFile, parentFolderId: String): CreatedFileDTO{
-        val fileInputStream = file.inputStream as FileInputStream
-        val filename = Optional.ofNullable(file.originalFilename)
-            .orElseThrow { IllegalStateException("Can no save file because the filename must not be null") }
+        val s3Metadata = ObjectMetadata()
+        s3Metadata.contentType = file.contentType
+        s3Metadata.contentLength = file.size
 
-        val newFile = File(
-            filename = filename,
+        val key = "glaze/${parentFolder.id}/${UUID.randomUUID()}"
+        s3.putObject(kioBucket, key, file.inputStream, s3Metadata)
+
+        val fileNames = fileRepository.getSubFileNames(parentFolder.files)
+        val validName = FileUtils.getValidName(file.originalFilename!!, fileNames)
+        val savedFile = fileRepository.save(File(
+            name = validName,
+            contentType = file.contentType ?: "N/A",
             size = file.size,
-            originalFilename = filename,
-            contentType = file.contentType
-        )
+            bucketKey = key,
+            parentFolder = parentFolderId,
+            url = s3.getUrl(kioBucket, key).toString(),
+            metadata = AuditFileMetadata("glaze")))
 
-        val createdFile = fileRepository.save(newFile)
-
-        folderService.findById(parentFolderId)
-            .orElseThrow { NotFoundException("Can not save file $filename because folder $parentFolderId does ot exists") }
-            .apply { files.add(createdFile) }
-            .let {
-                val finalFilename = "${it.originalFolderName}${newFile.originalFilename}"
-                DiskUtil.saveFileToDisk(fileInputStream, finalFilename)
-            }
-
-        return CreatedFileDTO(
-            createdFile.id,
-            createdFile.filename,
-            createdFile.size,
-            createdFile.contentType,
-            createdFile.createdAt
-        )
+        return SavedFileDTO(
+            id = savedFile.id,
+            name = savedFile.name,
+            size = savedFile.size,
+            contentType = savedFile.contentType,
+            createdAt = savedFile.metadata.createdAt!!)
     }
 
-    fun findById(id: String): FileDTO {
-        val file = fileRepository.findById(id)
-            .orElseThrow { NotFoundException("Can not find file with $id because it does not exists") }
 
-        val createdBy = file.createdBy ?: throw AssociationException("File with $id is not associated with a user")
-        return FileDTO(
-            file.id,
-            file.filename,
-            file.size,
-            file.lastModified,
-            UserDTO(createdBy.id, createdBy.nickname, createdBy.profilePicture)
-        )
-    }
-
-    fun renameFile(fileId: String, newFilename: String): RenamedEntityDTO {
+    fun findById(fileId: String): FileDTO {
         val file = fileRepository.findById(fileId)
-            .orElseThrow {throw NotFoundException("Can not rename file with $fileId because it does not exists.")}
+            .orElseThrow { NotFoundException("We could not find file with id $fileId") }
 
-        file.apply { filename =  newFilename}
-        return RenamedEntityDTO(file.filename, file.lastModified)
+        val parentFolder = folderRepository.findById(file.parentFolder)
+            .orElseThrow { IllegalStateException("This file does not belong to any folder") }
+
+        val canRename = PermissionValidator.canPerformOperation(parentFolder, Permission.CAN_READ)
+        if(!canRename) throw UnsupportedOperationException("You are not allowed to view this file")
+
+        return FileDTO(id = file.id!!, name = file.name, size = file.size, contentType = file.contentType)
     }
 
-    @Transactional(rollbackOn = [FileNotFoundException::class, RuntimeException::class])
-    fun deleteFileById(id: String){
-        val file = fileRepository.findById(id)
-            .orElseThrow { NotFoundException("Can not delete file with $id because it does not exists") }
+    fun rename(fileId: String, newName: String): RenamedEntityDTO {
+        val file = fileRepository.findById(fileId)
+            .orElseThrow { NotFoundException("You can not delete a file that does not exists $fileId") }
 
-        val createdBy = file.createdBy ?: throw AssociationException("This file is not associated with an user")
-        createdBy.apply { spaceUsed-=file.size }
+        val parentFolder = folderRepository.findById(file.parentFolder)
+            .orElseThrow { IllegalStateException("This file does not belong to any folder") }
 
-        DiskUtil.deleteFileFromDisk(file.originalFilename)
-        fileRepository.deleteById(id)
+        val canRename = PermissionValidator.canPerformOperation(parentFolder, Permission.CAN_MODIFY)
+        if(!canRename) throw UnsupportedOperationException("You are not allowed to rename this file")
+
+        val from = file.name
+        fileRepository.save(file)
+        return RenamedEntityDTO(from, newName)
     }
 
-    fun deleteFile(file: File){
-        fileRepository.delete(file)
-        DiskUtil.deleteFileFromDisk(file.originalFilename)
+    fun deleteById(fileId: String) {
+        val fileToDelete = fileRepository.findById(fileId)
+            .orElseThrow { NotFoundException("You can not delete a file that does not exists $fileId") }
+
+        val parentFolder = folderRepository.findById(fileToDelete.parentFolder)
+            .orElseThrow { IllegalStateException("You can not delete a file of folder that does not exists") }
+
+        val canDelete = PermissionValidator.canPerformOperation(parentFolder, Permission.CAN_DELETE_FILE)
+        if(!canDelete) throw UnsupportedOperationException("You are not allowed to delete this file")
+
+        fileRepository.delete(fileToDelete)
+    }
+
+    fun deleteMany(deleteManyRequest: GenericResourceRequest) {
+        val parentFolder = folderRepository.findById(deleteManyRequest.parentFolder)
+            .orElseThrow { NotFoundException("You can not delete files from a folder that does not exists") }
+
+        val canDelete = PermissionValidator.canPerformOperation(parentFolder, Permission.CAN_DELETE_FILE)
+        if(!canDelete) throw UnsupportedOperationException("You are not allowed to delete the files")
+
+        for(fileId in deleteManyRequest.resources) {
+            if(parentFolder.files.contains(fileId)) fileRepository.deleteById(fileId)
+        }
     }
 
 }

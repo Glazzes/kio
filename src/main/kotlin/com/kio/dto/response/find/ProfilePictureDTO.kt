@@ -1,4 +1,4 @@
-package com.kio.dto.find
+package com.kio.dto.response.find
 
 data class ProfilePictureDTO(
     val url: String,
