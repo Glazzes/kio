@@ -2,8 +2,8 @@ package com.kio.services
 
 import com.kio.dto.response.save.SavedUserDTO
 import com.kio.dto.request.SignUpRequest
-import com.kio.entities.mongo.UnitSummary
-import com.kio.entities.mongo.User
+import com.kio.entities.UnitSummary
+import com.kio.entities.User
 import com.kio.repositories.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -21,7 +21,8 @@ class UserService(val userRepository: UserRepository, val passwordEncoder: Passw
             password = encodedPassword,
             email = signUpRequest.email,
             profilePicture = null,
-            unitSummary = UnitSummary())
+            unitSummary = UnitSummary()
+        )
 
         val createdUser = userRepository.save(newUser)
         return SavedUserDTO(createdUser.id!!, createdUser.username, createdUser.email)

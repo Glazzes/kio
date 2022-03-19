@@ -1,7 +1,7 @@
 package com.kio.repositories
 
-import com.kio.entities.mongo.User
-import com.kio.entities.mongo.projections.ContributorProjection
+import com.kio.entities.User
+import com.kio.entities.projections.ContributorProjection
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface UserRepository : MongoRepository<User, String> {

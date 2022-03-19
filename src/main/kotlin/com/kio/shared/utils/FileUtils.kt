@@ -1,6 +1,6 @@
 package com.kio.shared.utils
 
-import com.kio.entities.mongo.projections.NameProjection
+import com.kio.entities.projections.NameProjection
 
 object FileUtils {
 

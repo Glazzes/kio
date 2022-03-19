@@ -1,4 +1,4 @@
-package com.kio.entities.mongo
+package com.kio.entities
 
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -12,7 +12,6 @@ class ProfilePicture(
     val owner: String,
     val isActive: Boolean = true,
     val url: String,
-
     @CreatedDate var createdAt: LocalDate? = null,
     @LastModifiedDate var lastTimeUsed: LocalDate? = null
 )

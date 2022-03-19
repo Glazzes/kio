@@ -1,4 +1,4 @@
-package com.kio.entities.mongo.projections
+package com.kio.entities.projections
 
 data class ProfilePictureProjection(val url: String)
 

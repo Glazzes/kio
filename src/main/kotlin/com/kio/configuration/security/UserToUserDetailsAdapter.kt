@@ -1,6 +1,6 @@
 package com.kio.configuration.security
 
-import com.kio.entities.mongo.User
+import com.kio.entities.User
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails

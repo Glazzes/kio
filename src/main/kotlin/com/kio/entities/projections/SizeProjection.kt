@@ -1,4 +1,4 @@
-package com.kio.entities.mongo.projections
+package com.kio.entities.projections
 
 interface SizeProjection {
     fun getTotalSize(): Long

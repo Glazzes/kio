@@ -6,10 +6,10 @@ import com.kio.dto.response.find.FileDTO
 import com.kio.dto.response.modify.RenamedEntityDTO
 import com.kio.dto.response.save.SavedFileDTO
 import com.kio.dto.request.GenericResourceRequest
-import com.kio.entities.mongo.File
-import com.kio.entities.mongo.AuditFileMetadata
-import com.kio.entities.mongo.enums.Permission
-import com.kio.repositories.MongoFileRepository
+import com.kio.entities.File
+import com.kio.entities.AuditFileMetadata
+import com.kio.entities.enums.Permission
+import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
@@ -23,7 +23,7 @@ import kotlin.UnsupportedOperationException
 @Service
 @Transactional
 class FileService(
-    private val fileRepository: MongoFileRepository,
+    private val fileRepository: FileRepository,
     private val folderRepository: FolderRepository,
     private val s3: AmazonS3
 ){
@@ -42,14 +42,17 @@ class FileService(
 
         val fileNames = fileRepository.getSubFileNames(parentFolder.files)
         val validName = FileUtils.getValidName(file.originalFilename!!, fileNames)
-        val savedFile = fileRepository.save(File(
+        val savedFile = fileRepository.save(
+            File(
             name = validName,
             contentType = file.contentType ?: "N/A",
             size = file.size,
             bucketKey = key,
             parentFolder = parentFolderId,
             url = s3.getUrl(kioBucket, key).toString(),
-            metadata = AuditFileMetadata("glaze")))
+            metadata = AuditFileMetadata("glaze")
+            )
+        )
 
         return SavedFileDTO(
             id = savedFile.id,
@@ -71,6 +74,11 @@ class FileService(
         if(!canRename) throw UnsupportedOperationException("You are not allowed to view this file")
 
         return FileDTO(id = file.id!!, name = file.name, size = file.size, contentType = file.contentType)
+    }
+
+    fun findByIdInternal(fileId: String): File {
+        return fileRepository.findById(fileId)
+            .orElseThrow { NotFoundException("We could not find file with id $fileId") }
     }
 
     fun rename(fileId: String, newName: String): RenamedEntityDTO {

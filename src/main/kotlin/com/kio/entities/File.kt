@@ -1,6 +1,6 @@
-package com.kio.entities.mongo
+package com.kio.entities
 
-import com.kio.entities.mongo.enums.FileState
+import com.kio.entities.enums.FileState
 import org.springframework.data.mongodb.core.mapping.Document
 import javax.persistence.Id
 

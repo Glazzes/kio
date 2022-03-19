@@ -2,12 +2,12 @@ package com.kio.services
 
 import com.kio.dto.response.save.SavedFolderDTO
 import com.kio.dto.response.find.FolderDTO
-import com.kio.entities.mongo.AuditFileMetadata
-import com.kio.entities.mongo.Folder
-import com.kio.entities.mongo.User
-import com.kio.entities.mongo.enums.FileState
-import com.kio.entities.mongo.enums.FolderType
-import com.kio.entities.mongo.enums.Permission
+import com.kio.entities.AuditFileMetadata
+import com.kio.entities.Folder
+import com.kio.entities.User
+import com.kio.entities.enums.FileState
+import com.kio.entities.enums.FolderType
+import com.kio.entities.enums.Permission
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.IllegalOperationException
@@ -43,7 +43,8 @@ class FolderService(
             name = name,
             state = parentFolder.state,
             coowners = parentFolder.coowners,
-            metadata = AuditFileMetadata(parentFolder.metadata.owner))
+            metadata = AuditFileMetadata(parentFolder.metadata.owner)
+        )
 
         val savedFolder = folderRepository.save(newFolder)
         parentFolder.subFolders.add(newFolder.id!!)
@@ -56,6 +57,11 @@ class FolderService(
 
         val canReadFolder = PermissionValidator.canPerformOperation(folder, Permission.CAN_READ)
         if(!canReadFolder) throw IllegalOperationException("You are not allowed to read this folder")
+    }
+
+    fun findByIdInternal(id: String): Folder {
+        return folderRepository.findById(id)
+            .orElseThrow { NotFoundException("We could not found folder $id") }
     }
 
 }

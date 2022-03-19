@@ -1,4 +1,4 @@
-package com.kio.entities.mongo
+package com.kio.entities
 
 data class UnitSummary(
     var spaceUsed: Long = 0,

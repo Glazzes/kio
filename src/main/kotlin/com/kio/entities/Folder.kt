@@ -1,8 +1,8 @@
-package com.kio.entities.mongo
+package com.kio.entities
 
-import com.kio.entities.mongo.enums.FileState
-import com.kio.entities.mongo.enums.FolderType
-import com.kio.entities.mongo.enums.Permission
+import com.kio.entities.enums.FileState
+import com.kio.entities.enums.FolderType
+import com.kio.entities.enums.Permission
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -18,5 +18,5 @@ class Folder(
     val subFolders: MutableSet<String> = HashSet(),
     val coowners: MutableMap<String, Set<Permission>> = HashMap(),
     val sharedWith: MutableSet<String> = HashSet(),
-    val metadata: AuditFileMetadata
+    val metadata: AuditFileMetadata,
 )

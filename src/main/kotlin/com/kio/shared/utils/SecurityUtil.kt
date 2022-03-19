@@ -1,7 +1,7 @@
 package com.kio.shared.utils
 
 import com.kio.configuration.security.UserToUserDetailsAdapter
-import com.kio.entities.mongo.User
+import com.kio.entities.User
 import org.springframework.security.core.context.SecurityContextHolder
 
 object SecurityUtil {

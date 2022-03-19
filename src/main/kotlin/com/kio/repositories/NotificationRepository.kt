@@ -1,7 +1,7 @@
 package com.kio.repositories
 
-import com.kio.entities.mongo.Notification
-import com.kio.entities.mongo.User
+import com.kio.entities.Notification
+import com.kio.entities.User
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface NotificationRepository : MongoRepository<Notification, Long> {

@@ -1,4 +1,4 @@
-package com.kio.entities.mongo
+package com.kio.entities
 
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.data.domain.AuditorAware
