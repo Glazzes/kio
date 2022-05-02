@@ -9,6 +9,6 @@ class User (
     var username: String,
     var password: String,
     var email: String,
-    var profilePicture: ProfilePicture?,
+    var profilePicture: ProfilePicture,
     val unitSummary: UnitSummary
 )

@@ -1,6 +1,8 @@
 package com.kio.services
 
+import com.amazonaws.services.kms.model.NotFoundException
 import com.kio.dto.request.ShareRequest
+import com.kio.repositories.FolderRepository
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
@@ -10,7 +12,7 @@ import java.time.Duration
 class ShareService(
     private val redisTemplate: RedisTemplate<String, Boolean>,
     private val fileService: FileService,
-    private val folderService: FolderService
+    private val folderRepository: FolderRepository
 ) {
 
     fun shareFile(shareRequest: ShareRequest) {
@@ -25,7 +27,8 @@ class ShareService(
     }
 
     fun shareFolder(shareRequest: ShareRequest) {
-        val folder = folderService.findByIdInternal(shareRequest.resource)
+        val folder = folderRepository.findById(shareRequest.resource)
+            .orElseThrow { NotFoundException("We could not found folder with id ${shareRequest.resource}") }
         val isOwner = PermissionValidator.isResourceOwner(folder)
 
         if(!isOwner) {

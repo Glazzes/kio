@@ -18,16 +18,16 @@ class OAuth2ResourceServerConfiguration(private val tokenStore: TokenStore): Res
 
     override fun configure(resources: ResourceServerSecurityConfigurer) {
         resources.resourceId("kio-id")
-            //.tokenStore(tokenStore) Token store is only required when both apps are splitted
+            // .tokenStore(tokenStore) // Token store is only required when both apps are splitted
             // there's already a bean of tokenstore in the context that this rs will use
             //.authenticationManager(authenticationManager)
     }
 
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
-            .mvcMatchers("/hello").access("#oauth2.hasScope('read')")
+            .mvcMatchers(HttpMethod.POST,"/api/v1/users").permitAll()
             .anyRequest()
-            .permitAll()
+            .authenticated()
     }
 
 }

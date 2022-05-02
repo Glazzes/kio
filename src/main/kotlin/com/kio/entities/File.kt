@@ -1,8 +1,8 @@
 package com.kio.entities
 
 import com.kio.entities.enums.FileState
+import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import javax.persistence.Id
 
 @Document(collection = "files")
 class File(
@@ -12,8 +12,7 @@ class File(
     val contentType: String,
     val size: Long,
     val bucketKey: String,
-    val url: String,
     var parentFolder: String,
-    var state: FileState = FileState.OWNER,
+    var state: FileState,
     var metadata: AuditFileMetadata,
 )

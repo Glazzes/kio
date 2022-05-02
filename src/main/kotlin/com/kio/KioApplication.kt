@@ -2,37 +2,25 @@ package com.kio
 
 import com.kio.configuration.aws.AwsProperties
 import com.kio.configuration.properties.OAuthConfigurationProperties
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
-import org.springframework.context.annotation.Bean
 import org.springframework.data.mongodb.config.EnableMongoAuditing
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.scheduling.annotation.EnableAsync
 
-@SpringBootApplication
+@EnableAsync
+@SpringBootApplication(
+	exclude = [
+		DataSourceAutoConfiguration::class,
+		DataSourceTransactionManagerAutoConfiguration::class,
+		HibernateJpaAutoConfiguration::class
+	])
 @EnableMongoAuditing
 @EnableConfigurationProperties(value = [OAuthConfigurationProperties::class, AwsProperties::class])
-class KioApplication{
-	@Autowired private lateinit var userRepository: UserRepository
-	@Autowired private lateinit var passwordEncoder: PasswordEncoder
-
-	@Bean
-	fun init(): CommandLineRunner {
-		return CommandLineRunner {
-			val user = User(
-				username = "glaze",
-				password = passwordEncoder.encode("pass"),
-				nickname = "glaze",
-				email = "glaze@demo.com"
-			)
-
-			userRepository.save(user)
-		}
-	}
-
-}
+class KioApplication
 
 fun main(args: Array<String>) {
 	runApplication<KioApplication>(*args)

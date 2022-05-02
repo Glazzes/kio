@@ -25,18 +25,16 @@ security:
       client-secret: rssecret
 
 spring:
+  security:
+
+
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 200MB
       enabled: true
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    username: glaze
-    password: dalmatian
-    url: jdbc:postgresql://localhost:5432/connect
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    database-platform: com.kio.configuration.pg.CustomDialect
+  data:
+    mongodb:
+      database: kio
+      port: 27017
+      host: localhost

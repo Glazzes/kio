@@ -16,7 +16,7 @@ class Folder(
     var color: String = "grey200",
     val files: MutableSet<String> = HashSet(),
     val subFolders: MutableSet<String> = HashSet(),
-    val coowners: MutableMap<String, Set<Permission>> = HashMap(),
+    val contributors: MutableMap<String, Set<Permission>> = HashMap(),
     val sharedWith: MutableSet<String> = HashSet(),
     val metadata: AuditFileMetadata,
 )

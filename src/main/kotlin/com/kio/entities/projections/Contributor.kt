@@ -1,5 +1,9 @@
 package com.kio.entities.projections
 
-data class ProfilePictureProjection(val url: String)
+import com.kio.entities.ProfilePicture
 
-data class ContributorProjection(val id: String, val username: String, val profilePicture: ProfilePictureProjection)
+data class ContributorProjection(
+    val id: String,
+    val username: String,
+    val profilePicture: ProfilePicture,
+)

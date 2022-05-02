@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.Query
 
 interface FileRepository : MongoRepository<File, String> {
 
-    @Query(value = "{_id: {\$in: :ids}}")
-    fun getSubFileNames(ids: Set<String?>): Collection<NameProjection>
+    @Query(value = "{_id: {\$in: ?0}}")
+    fun getFolderFilesNames(ids: Set<String?>): Collection<NameProjection>
 
 }

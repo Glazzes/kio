@@ -17,7 +17,7 @@ class FileController (val fileService: FileService){
     @PostMapping
     fun save(
         @RequestParam(name = "parent") parentFolderId: String,
-        @RequestParam file: MultipartFile,
+        @RequestParam(name = "file") file: MultipartFile,
     ): ResponseEntity<SavedFileDTO> {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(fileService.save(file, parentFolderId))

@@ -1,5 +1,6 @@
 package com.kio.configuration.security
 
+import com.kio.repositories.UserRepository
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
