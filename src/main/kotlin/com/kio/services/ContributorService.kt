@@ -4,13 +4,13 @@ import com.kio.dto.ContributorInfo
 import com.kio.dto.request.NewContributorRequest
 import com.kio.entities.Folder
 import com.kio.entities.User
-import com.kio.entities.enums.FileState
+import com.kio.entities.enums.FileVisibility
 import com.kio.mappers.UserMapper
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.AlreadyExistsException
-import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
+import com.kio.shared.utils.PermissionValidator
 import org.springframework.stereotype.Service
 
 @Service
@@ -29,7 +29,7 @@ class ContributorService(
         }
 
         folder.contributors[contributor.id!!] = contributorRequest.permissions
-        if(folder.state != FileState.PUBLIC) folder.state = FileState.RESTRICTED
+        if(folder.visibility != FileVisibility.PUBLIC) folder.visibility = FileVisibility.RESTRICTED
         folderRepository.save(folder)
 
         return UserMapper.toContributorInfo(contributor)
@@ -37,9 +37,7 @@ class ContributorService(
 
     private fun checkResourceOwnership(folder: Folder) {
         val isOwner = PermissionValidator.isResourceOwner(folder)
-        if(!isOwner) {
-            throw IllegalOperationException("You can not add contributors to a resource you do not own")
-        }
+
     }
 
     private fun findContributorById(id: String): User {

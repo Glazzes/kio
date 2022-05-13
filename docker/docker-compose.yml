@@ -6,7 +6,7 @@ services:
 #    ports:
 #      - '8080:8080'
 #   depends_on:
-#      - localstack-s3
+#      - s3
 #      - postgres
 
 #  postgres:
@@ -19,9 +19,9 @@ services:
 #    ports:
 #      - '5432:5432'
 
-  localstack-s3:
+  s3:
     image: localstack/localstack:latest
-    container_name: localstack-s3
+    container_name: s3
     environment:
       DEBUG: 1
       USE_SSL: 0

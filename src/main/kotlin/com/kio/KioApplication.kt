@@ -1,6 +1,7 @@
 package com.kio
 
 import com.kio.configuration.aws.AwsProperties
+import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.configuration.properties.OAuthConfigurationProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
@@ -19,7 +20,7 @@ import org.springframework.scheduling.annotation.EnableAsync
 		HibernateJpaAutoConfiguration::class
 	])
 @EnableMongoAuditing
-@EnableConfigurationProperties(value = [OAuthConfigurationProperties::class, AwsProperties::class])
+@EnableConfigurationProperties(value = [OAuthConfigurationProperties::class, AwsProperties::class, BucketConfigurationProperties::class])
 class KioApplication
 
 fun main(args: Array<String>) {

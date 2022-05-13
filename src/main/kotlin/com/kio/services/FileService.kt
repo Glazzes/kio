@@ -14,13 +14,12 @@ import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
+import com.kio.shared.utils.PermissionValidator
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.util.*
 
 @Service
-@Transactional
 class FileService(
     private val fileRepository: FileRepository,
     private val folderRepository: FolderRepository,
@@ -30,7 +29,7 @@ class FileService(
 
     fun save(file: MultipartFile, parentFolderId: String): SavedFileDTO {
         val parentFolder = this.findFolderById(parentFolderId)
-        PermissionValidator.checkResourcePermissions(parentFolder, Permission.CAN_CREATE)
+        PermissionValidator.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
 
         val s3Metadata = ObjectMetadata()
         s3Metadata.contentType = file.contentType
@@ -48,10 +47,14 @@ class FileService(
             size = file.size,
             bucketKey = key,
             parentFolder = parentFolderId,
-            state = parentFolder.state,
-            metadata = AuditFileMetadata(parentFolder.metadata.owner))
+            visibility = parentFolder.visibility,
+            metadata = AuditFileMetadata(parentFolder.metadata.ownerId))
 
         val savedFile = fileRepository.save(fileToSave)
+        folderRepository.save(parentFolder.apply {
+            this.files.add(savedFile.id!!)
+            this.size += savedFile.size
+        })
 
         return SavedFileDTO(
             id = savedFile.id,
@@ -65,7 +68,7 @@ class FileService(
     fun findById(fileId: String): FileDTO {
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
-        PermissionValidator.checkResourcePermissions(parentFolder, Permission.CAN_READ)
+        PermissionValidator.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
 
         return FileDTO(id = file.id!!, name = file.name, size = file.size, contentType = file.contentType)
     }
@@ -74,7 +77,7 @@ class FileService(
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
 
-        PermissionValidator.checkResourcePermissions(parentFolder, Permission.CAN_MODIFY)
+        PermissionValidator.checkFolderPermissions(parentFolder, Permission.MODIFY)
 
         val from = file.name
         fileRepository.save(file)
@@ -84,13 +87,17 @@ class FileService(
     fun deleteById(fileId: String) {
         val fileToDelete = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(fileToDelete.parentFolder)
-        PermissionValidator.checkResourcePermissions(parentFolder, Permission.CAN_DELETE_FILE)
+        PermissionValidator.checkFolderPermissions(parentFolder, Permission.DELETE)
+
+        parentFolder.apply { files.remove(fileToDelete.id!!) }
+        s3.deleteObject(kioBucket, fileToDelete.bucketKey)
         fileRepository.delete(fileToDelete)
+        folderRepository.save(parentFolder)
     }
 
     fun deleteMany(deleteManyRequest: GenericResourceRequest) {
         val parentFolder = this.findFolderById(deleteManyRequest.parentFolder)
-        PermissionValidator.checkResourcePermissions(parentFolder, Permission.CAN_DELETE_FILE)
+        PermissionValidator.checkFolderPermissions(parentFolder, Permission.DELETE)
 
         for(fileId in deleteManyRequest.resources) {
             if(parentFolder.files.contains(fileId)) {

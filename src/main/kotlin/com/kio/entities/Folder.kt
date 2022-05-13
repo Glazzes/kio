@@ -1,6 +1,6 @@
 package com.kio.entities
 
-import com.kio.entities.enums.FileState
+import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.FolderType
 import com.kio.entities.enums.Permission
 import org.springframework.data.annotation.Id
@@ -10,10 +10,10 @@ import org.springframework.data.mongodb.core.mapping.Document
 class Folder(
     @Id var id: String? = null,
     var name: String,
-    val size: Long = 0,
+    var size: Long = 0,
     var folderType: FolderType = FolderType.REGULAR,
-    var state: FileState = FileState.OWNER,
-    var color: String = "grey200",
+    var visibility: FileVisibility = FileVisibility.OWNER,
+    var color: String = "#3366ff",
     val files: MutableSet<String> = HashSet(),
     val subFolders: MutableSet<String> = HashSet(),
     val contributors: MutableMap<String, Set<Permission>> = HashMap(),

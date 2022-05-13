@@ -1,5 +1,6 @@
 package com.kio.configuration.redis
 
+import com.kio.entities.SharedResource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
@@ -9,8 +10,8 @@ import org.springframework.data.redis.core.RedisTemplate
 class RedisConfiguration {
 
     @Bean
-    fun redisTemplate(): RedisTemplate<String, Boolean> {
-        val redisTemplate = RedisTemplate<String, Boolean>()
+    fun redisTemplate(): RedisTemplate<String, SharedResource> {
+        val redisTemplate = RedisTemplate<String, SharedResource>()
         redisTemplate.setConnectionFactory(redisConnectionFactory())
         return redisTemplate
     }

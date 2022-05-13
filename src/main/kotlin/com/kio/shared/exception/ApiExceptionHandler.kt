@@ -26,7 +26,7 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(value = [
         UnsupportedOperationException::class,
-        IllegalStateException::class,
+        IllegalAccessException::class,
         IllegalOperationException::class
     ])
     fun handleUnsupportedOperationException(e: Exception, request: HttpServletRequest): ResponseEntity<ExceptionDetails> {

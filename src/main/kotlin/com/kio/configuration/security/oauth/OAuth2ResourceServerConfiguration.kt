@@ -27,7 +27,7 @@ class OAuth2ResourceServerConfiguration(private val tokenStore: TokenStore): Res
         http.authorizeRequests()
             .mvcMatchers(HttpMethod.POST,"/api/v1/users").permitAll()
             .anyRequest()
-            .authenticated()
+            .permitAll()
     }
 
 }

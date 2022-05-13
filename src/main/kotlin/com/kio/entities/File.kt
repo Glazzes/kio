@@ -1,6 +1,6 @@
 package com.kio.entities
 
-import com.kio.entities.enums.FileState
+import com.kio.entities.enums.FileVisibility
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -13,6 +13,6 @@ class File(
     val size: Long,
     val bucketKey: String,
     var parentFolder: String,
-    var state: FileState,
+    var visibility: FileVisibility,
     var metadata: AuditFileMetadata,
 )

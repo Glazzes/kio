@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.security.oauth:spring-security-oauth2:2.5.1-RELEASE")
+	implementation("org.springframework.security.oauth:spring-security-oauth2:2.5.1")
 	implementation("com.amazonaws:aws-java-sdk-s3:1.12.146")
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
