@@ -35,7 +35,7 @@ class FolderController(val folderService: FolderService) {
             .body(folderService.findById(id))
     }
 
-    @GetMapping(path = ["/{id}/subFolders"])
+    @GetMapping(path = ["/{id}/sub-folders"])
     fun findSubFoldersById(@PathVariable id: String): ResponseEntity<Collection<FolderDTO>> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(folderService.findSubFoldersByParentId(id))

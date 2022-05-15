@@ -8,7 +8,7 @@ import com.kio.entities.enums.Permission
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.PermissionValidator
+import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
 
 @Service
@@ -27,7 +27,7 @@ class StaticService(
             .orElseThrow { NotFoundException("Folder with id ${file.parentFolder} does not exists") }
 
         if(file.visibility != FileVisibility.PUBLIC) {
-            PermissionValidator.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
+            PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
         }
 
         val content = s3.getObject(buckets.filesBucket, file.bucketKey)

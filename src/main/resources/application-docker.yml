@@ -10,7 +10,7 @@ kio:
 
 aws:
   s3:
-    endpoint: http://localstack-s3:4566
+    endpoint: http://s3:4566
     bucket: kio-bucket
     region: us-east-1
     access-key: localstack
@@ -22,6 +22,7 @@ spring:
       max-file-size: 1GB
       max-request-size: 1GB
       enabled: true
+
   datasource:
     driver-class-name: org.postgresql.Driver
     username: glaze
@@ -32,3 +33,9 @@ spring:
       ddl-auto: create-drop
     show-sql: true
     database-platform: com.kio.configuration.pg.CustomDialect
+
+  data:
+    mongodb:
+      database: kio
+      port: 27017
+      host: mongodb

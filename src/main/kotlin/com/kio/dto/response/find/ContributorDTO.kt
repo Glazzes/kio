@@ -1,6 +1,6 @@
-package com.kio.dto
+package com.kio.dto.response.find
 
-data class ContributorInfo(
+data class ContributorDTO(
     val id: String,
     val username: String,
     val profilePictureUrl: String,

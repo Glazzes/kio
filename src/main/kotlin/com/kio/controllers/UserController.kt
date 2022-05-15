@@ -3,6 +3,7 @@ package com.kio.controllers
 import com.kio.dto.response.find.UserDTO
 import com.kio.dto.request.SignUpRequest
 import com.kio.services.UserService
+import com.kio.shared.utils.ControllerUtil
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -20,11 +21,7 @@ class UserController(private val userService: UserService){
         bindingResult: BindingResult
     ): ResponseEntity<*>{
         if(bindingResult.hasFieldErrors()){
-            val fieldErrors: MutableMap<String, String?> = HashMap()
-            for(error in bindingResult.fieldErrors){
-                fieldErrors[error.field] = error.defaultMessage
-            }
-
+            val fieldErrors = ControllerUtil.getRequestErrors(bindingResult)
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(fieldErrors)
         }

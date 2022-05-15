@@ -7,17 +7,20 @@ services:
 #      - '8080:8080'
 #   depends_on:
 #      - s3
-#      - postgres
+#      - mongodb
+#      - redis
 
-#  postgres:
-#    image: postges:13.3-apine
-#    container_name: postgres
-#    environment:
-#      POSTGRES_USER: glaze
-#      POSTGRES_PASSWORD: dalmatian
-#      POSTGRES_DB: kio
-#    ports:
-#      - '5432:5432'
+  redis:
+    image: redis:6.24-alpine
+    container_name: redis
+    port:
+      - 6379:6379
+
+  mongodb:
+    image: mongodb:latest
+    container_name: mongodb
+    ports:
+      - 27017:27017
 
   s3:
     image: localstack/localstack:latest

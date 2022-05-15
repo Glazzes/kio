@@ -1,9 +1,9 @@
 package com.kio.controllers
 
+import com.kio.dto.request.FileDeleteRequest
 import com.kio.dto.response.find.FileDTO
 import com.kio.dto.response.modify.RenamedEntityDTO
 import com.kio.dto.response.save.SavedFileDTO
-import com.kio.dto.request.GenericResourceRequest
 import com.kio.services.FileService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,13 +14,13 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v1/files")
 class FileController (val fileService: FileService){
 
-    @PostMapping
+    @PostMapping(path = ["/{id}"])
     fun save(
-        @RequestParam(name = "parent") parentFolderId: String,
-        @RequestParam(name = "file") file: MultipartFile,
-    ): ResponseEntity<SavedFileDTO> {
+        @PathVariable id: String,
+        @RequestPart files: List<MultipartFile>
+    ): ResponseEntity<Collection<SavedFileDTO>> {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(fileService.save(file, parentFolderId))
+            .body(fileService.save(id, files))
     }
 
     @GetMapping(path = ["/{id}"])
@@ -38,16 +38,9 @@ class FileController (val fileService: FileService){
             .body(fileService.rename(fileId, filename))
     }
 
-    @DeleteMapping(path = ["/{id}"])
-    fun delete(@PathVariable id: String): ResponseEntity<Unit>{
-        fileService.deleteById(id)
-        return ResponseEntity.status(HttpStatus.NO_CONTENT)
-            .build()
-    }
-
-    @DeleteMapping(path = ["/many"])
-    fun deleteMany(@RequestBody deleteRequest: GenericResourceRequest) : ResponseEntity<Unit> {
-        fileService.deleteMany(deleteRequest)
+    @DeleteMapping
+    fun delete(@RequestBody deleteRequest: FileDeleteRequest): ResponseEntity<Unit>{
+        fileService.deleteAll(deleteRequest)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

@@ -7,7 +7,7 @@ import com.kio.dto.request.ShareRequest
 import com.kio.entities.SharedResource
 import com.kio.repositories.FolderRepository
 import com.kio.shared.enums.ResourceType
-import com.kio.shared.utils.PermissionValidator
+import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
@@ -26,7 +26,7 @@ class SharingService(
 
     fun shareFile(shareRequest: ShareRequest): String {
         val file = fileService.findByIdInternal(shareRequest.resourceId)
-        PermissionValidator.isResourceOwner(file)
+        PermissionValidatorUtil.isResourceOwner(file)
 
         val randomKey = UUID.randomUUID().toString()
         val sharedResource = SharedResource(file.id!!, ResourceType.FILE)
@@ -38,7 +38,7 @@ class SharingService(
     fun shareFolder(shareRequest: ShareRequest) {
         val folder = folderRepository.findById(shareRequest.resourceId)
             .orElseThrow { NotFoundException("We could not found folder with id ${shareRequest.resourceId}") }
-        PermissionValidator.isResourceOwner(folder)
+        PermissionValidatorUtil.isResourceOwner(folder)
 
         val duration = this.getDuration(shareRequest.timeUnit, shareRequest.duration)
     }
@@ -58,12 +58,12 @@ class SharingService(
         if(duration < 0) throw IllegalStateException("No negative numbers, share duration must be bigger than one")
 
         val times = hashMapOf(
-            TimeUnit.MINUTES to 60 * 24 * 7,
-            TimeUnit.HOURS to 24 * 7,
-            TimeUnit.DAYS to 7)
+            TimeUnit.MINUTES to 60 * 24 * 3,
+            TimeUnit.HOURS to 24 * 3,
+            TimeUnit.DAYS to 3)
 
         val maxTime = times[timeUnit] ?: throw IllegalStateException("Share time must be specified in minutes, hours or days")
-        if(duration > maxTime) throw IllegalStateException("Share duration exceeds 7 days")
+        if(duration > maxTime) throw IllegalStateException("Share duration exceeds 3 days")
 
         return when(timeUnit) {
             TimeUnit.MINUTES -> Duration.ofMinutes(duration)

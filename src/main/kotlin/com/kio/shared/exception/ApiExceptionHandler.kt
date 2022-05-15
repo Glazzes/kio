@@ -34,9 +34,15 @@ class ApiExceptionHandler {
             .body(ExceptionDetails(e.message, LocalDateTime.now(), request.servletPath))
     }
 
+    @ExceptionHandler(value = [AlreadyExistsException::class])
+    fun handleAlreadyExistsException(e: Exception, request: HttpServletRequest): ResponseEntity<ExceptionDetails> {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ExceptionDetails(e.message, LocalDateTime.now(), request.servletPath))
+    }
+
     data class ExceptionDetails(
-        val causedBy: String?,
-        val thrownAt: LocalDateTime,
+        val cause: String?,
+        val timpeStamp: LocalDateTime,
         val path: String,
     )
 

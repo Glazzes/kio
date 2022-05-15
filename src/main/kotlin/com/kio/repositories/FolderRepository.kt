@@ -13,9 +13,9 @@ interface FolderRepository : MongoRepository<Folder, String> {
     fun findByMetadataOwnerIdAndFolderType(id: String, folderType: FolderType): Folder?
     fun findByIdIsIn(ids: Collection<String>): Collection<Folder>
 
-    @Query(value = "{_id: {\$in: ?0}}")
-    fun getSubFolderNames(ids: List<String?>): Collection<NameProjection>
+    @Query(value = "{parentFolder: ?0}")
+    fun findFolderNamesByParentId(parentFolder: String): Collection<NameProjection>
 
     @Aggregation(value = ["{\$match: {_id: {\$in: ?0}}}", "{\$group: {_id: null, {totalSize: {\$sum: \"\$size\"}}}}"])
-    fun findFolderSizeBySubFolderIds(ids: Collection<String?>): SizeProjection
+    fun findFoldersSize(ids: Collection<String?>): SizeProjection
 }

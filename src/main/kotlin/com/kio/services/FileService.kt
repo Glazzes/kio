@@ -1,23 +1,26 @@
 package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.amazonaws.services.s3.model.ObjectMetadata
+import com.kio.dto.request.FileDeleteRequest
 import com.kio.dto.response.find.FileDTO
 import com.kio.dto.response.modify.RenamedEntityDTO
 import com.kio.dto.response.save.SavedFileDTO
-import com.kio.dto.request.GenericResourceRequest
 import com.kio.entities.File
 import com.kio.entities.AuditFileMetadata
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
+import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
-import com.kio.shared.utils.PermissionValidator
+import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.util.*
+import kotlin.collections.ArrayList
 
 @Service
 class FileService(
@@ -27,48 +30,58 @@ class FileService(
 ){
     private val kioBucket = "files.kio.com"
 
-    fun save(file: MultipartFile, parentFolderId: String): SavedFileDTO {
+    fun save(parentFolderId: String, files: List<MultipartFile>): Collection<SavedFileDTO> {
         val parentFolder = this.findFolderById(parentFolderId)
-        PermissionValidator.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
 
-        val s3Metadata = ObjectMetadata()
-        s3Metadata.contentType = file.contentType
-        s3Metadata.contentLength = file.size
+        val filesToSave: MutableList<File> = ArrayList()
+        val parentFolderNames = fileRepository.getFolderFilesNames(parentFolder.files)
 
-        val key = "${parentFolder.id}/${UUID.randomUUID()}"
-        s3.putObject(kioBucket, key, file.inputStream, s3Metadata)
+        for(file in files) {
+            val key = "${parentFolder.id}/${UUID.randomUUID()}"
 
-        val fileNames = fileRepository.getFolderFilesNames(parentFolder.files)
-        val validName = FileUtils.getValidName(file.originalFilename!!, fileNames)
+            val s3Metadata = ObjectMetadata()
+            s3Metadata.contentType = file.contentType
+            s3Metadata.contentLength = file.size
 
-        val fileToSave = File(
-            name = validName,
-            contentType = file.contentType ?: "UNKNOWN",
-            size = file.size,
-            bucketKey = key,
-            parentFolder = parentFolderId,
-            visibility = parentFolder.visibility,
-            metadata = AuditFileMetadata(parentFolder.metadata.ownerId))
+            s3.putObject(kioBucket, key, file.inputStream, s3Metadata)
 
-        val savedFile = fileRepository.save(fileToSave)
+            val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
+
+            val fileToSave = File(
+                name = validName,
+                contentType = file.contentType ?: "UNKNOWN",
+                size = file.size,
+                bucketKey = key,
+                parentFolder = parentFolderId,
+                visibility = parentFolder.visibility,
+                metadata = AuditFileMetadata(parentFolder.metadata.ownerId)
+            )
+
+            filesToSave.add(fileToSave)
+        }
+
+        val savedFiles = fileRepository.saveAll(filesToSave)
         folderRepository.save(parentFolder.apply {
-            this.files.add(savedFile.id!!)
-            this.size += savedFile.size
+            this.files.addAll(savedFiles.map{ it.id!! })
+            this.size += filesToSave.sumOf { it.size }
         })
 
-        return SavedFileDTO(
-            id = savedFile.id,
-            name = savedFile.name,
-            size = savedFile.size,
-            contentType = savedFile.contentType,
-            createdAt = savedFile.metadata.createdAt!!)
+        return savedFiles.map {
+            SavedFileDTO(
+                id = it.id,
+                name = it.name,
+                size = it.size,
+                contentType = it.contentType,
+                createdAt = it.metadata.createdAt!!
+            ) }
     }
 
 
     fun findById(fileId: String): FileDTO {
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
-        PermissionValidator.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
 
         return FileDTO(id = file.id!!, name = file.name, size = file.size, contentType = file.contentType)
     }
@@ -77,33 +90,34 @@ class FileService(
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
 
-        PermissionValidator.checkFolderPermissions(parentFolder, Permission.MODIFY)
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE, Permission.MODIFY)
 
-        val from = file.name
-        fileRepository.save(file)
-        return RenamedEntityDTO(from, newName)
+        fileRepository.save(file.apply { name = newName })
+        return RenamedEntityDTO(file.name, newName)
     }
 
-    fun deleteById(fileId: String) {
-        val fileToDelete = this.findByIdInternal(fileId)
-        val parentFolder = this.findFolderById(fileToDelete.parentFolder)
-        PermissionValidator.checkFolderPermissions(parentFolder, Permission.DELETE)
+    fun deleteAll(deleteRequest: FileDeleteRequest) {
+        val parentFolder = this.findFolderById(deleteRequest.from)
 
-        parentFolder.apply { files.remove(fileToDelete.id!!) }
-        s3.deleteObject(kioBucket, fileToDelete.bucketKey)
-        fileRepository.delete(fileToDelete)
-        folderRepository.save(parentFolder)
-    }
-
-    fun deleteMany(deleteManyRequest: GenericResourceRequest) {
-        val parentFolder = this.findFolderById(deleteManyRequest.parentFolder)
-        PermissionValidator.checkFolderPermissions(parentFolder, Permission.DELETE)
-
-        for(fileId in deleteManyRequest.resources) {
-            if(parentFolder.files.contains(fileId)) {
-                fileRepository.deleteById(fileId)
-            }
+        if(!parentFolder.files.containsAll(deleteRequest.files)) {
+            throw IllegalOperationException("At least one of the files does not belong to this folder ${deleteRequest.from}")
         }
+
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE, Permission.DELETE)
+        val filesToDelete = fileRepository.findByIdIsIn(deleteRequest.files)
+        val filesToDeleteSize = filesToDelete.sumOf { it.size }
+
+        val deleteObjects = DeleteObjectsRequest(kioBucket).apply {
+            keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+        }
+
+        folderRepository.save(parentFolder.apply {
+            files.removeAll(deleteRequest.files.toSet())
+            size -= filesToDeleteSize
+        })
+
+        fileRepository.deleteAll(filesToDelete)
+        s3.deleteObjects(deleteObjects)
     }
 
     private fun findFolderById(id: String): Folder {

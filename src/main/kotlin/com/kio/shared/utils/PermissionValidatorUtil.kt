@@ -3,12 +3,11 @@ package com.kio.shared.utils
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.FileVisibility
-import com.kio.entities.enums.FolderType
 import com.kio.entities.enums.Permission
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.UnIdentifiedResourceException
 
-object PermissionValidator {
+object PermissionValidatorUtil {
 
     fun isResourceOwner(resource: Any) {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
