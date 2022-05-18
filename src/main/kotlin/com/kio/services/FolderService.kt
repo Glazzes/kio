@@ -2,6 +2,7 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
+import com.kio.dto.request.FolderCreateRequest
 import com.kio.dto.response.find.ContributorDTO
 import com.kio.dto.response.find.FileDTO
 import com.kio.dto.response.save.SavedFolderDTO
@@ -16,6 +17,8 @@ import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
+import com.kio.shared.enums.FolderCreationStrategy
+import com.kio.shared.exception.AlreadyExistsException
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
@@ -44,15 +47,19 @@ class FolderService(
         folderRepository.save(rootFolder)
     }
 
-    fun save(parentFolderId: String, name: String): SavedFolderDTO {
+    fun save(parentFolderId: String, request: FolderCreateRequest): SavedFolderDTO {
         val parentFolder = this.findByInternal(parentFolderId)
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+
         val subFolderNames = folderRepository.findFolderNamesByParentId(parentFolderId)
             .map { it.getName() }
 
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+        if(subFolderNames.contains(request.name) && request.strategy == FolderCreationStrategy.OMIT) {
+            throw AlreadyExistsException("A folder with name ${request.name} already exists within folder $parentFolderId")
+        }
 
         val newFolder = Folder(
-            name = FileUtils.getValidName(name, subFolderNames),
+            name = FileUtils.getValidName(request.name, subFolderNames),
             visibility = parentFolder.visibility,
             contributors = parentFolder.contributors,
             parentFolder = parentFolderId,
@@ -70,7 +77,7 @@ class FolderService(
     fun findCurrentUserUnit(): FolderDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT) ?:
-            throw IllegalStateException("This user does not have an unit...")
+            throw IllegalStateException("This user does not have an unit, how?!!!")
 
         return FolderMapper.toFolderDTO(userUnit, emptySet())
     }

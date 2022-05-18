@@ -19,9 +19,15 @@ class StaticController(private val staticService: StaticService){
     fun downloadFileById(@PathVariable id: String): ResponseEntity<InputStreamResource> {
         val dto = staticService.downloadFileById(id)
         val fileToDownload = dto.inputStream
+
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(dto.contentType))
             .body(InputStreamResource(fileToDownload))
+    }
+
+    fun downloadFolderById(): ResponseEntity<Unit> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .build()
     }
 
 }

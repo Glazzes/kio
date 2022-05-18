@@ -1,27 +1,20 @@
 package com.kio.controllers
 
+import com.kio.dto.request.FolderCreateRequest
 import com.kio.dto.response.find.FileDTO
 import com.kio.dto.response.find.FolderDTO
 import com.kio.dto.response.save.SavedFolderDTO
 import com.kio.entities.enums.FileVisibility
+import com.kio.repositories.FolderRepository
 import com.kio.services.FolderService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/folders")
-class FolderController(val folderService: FolderService) {
-
-    @PostMapping(path = ["/{id}/create"])
-    fun create(
-        @PathVariable("id") parentFolderId: String,
-        @RequestParam name: String
-    ): ResponseEntity<SavedFolderDTO> {
-        val createdFolderDTO = folderService.save(parentFolderId, name)
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(createdFolderDTO)
-    }
+class FolderController(private val folderService: FolderService) {
 
     @GetMapping(path = ["/my-unit"])
     fun findAuthenticatedUserUnit(): ResponseEntity<FolderDTO> {
@@ -33,6 +26,13 @@ class FolderController(val folderService: FolderService) {
     fun findById(@PathVariable id: String): ResponseEntity<FolderDTO> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(folderService.findById(id))
+    }
+
+    @PostMapping(path = ["/{id}"])
+    fun save(@PathVariable id: String, @RequestBody request: FolderCreateRequest): ResponseEntity<SavedFolderDTO> {
+        val createdFolderDTO = folderService.save(id, request)
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(createdFolderDTO)
     }
 
     @GetMapping(path = ["/{id}/sub-folders"])

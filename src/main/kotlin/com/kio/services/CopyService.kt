@@ -75,8 +75,11 @@ class CopyService(
         val sourceFileNames = sourceFiles.map { it.name }
         val filesToDelete = destinationFiles.filter { sourceFileNames.contains(it.name) }
 
-        val deleteObjects = DeleteObjectsRequest(bucketConfigurationProperties.filesBucket)
-        deleteObjects.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+        if(filesToDelete.isNotEmpty()) {
+            val deleteObjects = DeleteObjectsRequest(bucketConfigurationProperties.filesBucket)
+            deleteObjects.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+            s3.deleteObjects(deleteObjects)
+        }
 
         val newFiles = mutableSetOf<File>()
         for(file in sourceFiles) {
@@ -89,7 +92,6 @@ class CopyService(
         }
 
         fileRepository.deleteAll(filesToDelete)
-        s3.deleteObjects(deleteObjects)
         return fileRepository.saveAll(newFiles)
             .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
     }

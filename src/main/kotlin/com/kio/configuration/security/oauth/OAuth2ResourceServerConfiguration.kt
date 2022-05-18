@@ -14,7 +14,10 @@ import org.springframework.security.oauth2.provider.token.TokenStore
 
 @Configuration
 @EnableResourceServer
-class OAuth2ResourceServerConfiguration(private val tokenStore: TokenStore): ResourceServerConfigurerAdapter(){
+class OAuth2ResourceServerConfiguration(
+    private val tokenStore: TokenStore,
+    private val authenticationManager: AuthenticationManager
+): ResourceServerConfigurerAdapter(){
 
     override fun configure(resources: ResourceServerSecurityConfigurer) {
         resources.resourceId("kio-id")

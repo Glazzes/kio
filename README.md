@@ -5,9 +5,10 @@ Kio it's a file manager backend (this project) & mobile app such as Google Drive
 Dropbox where users can store, visualize, share and download
 their files at any time.
 
-Kio has been made as an `Amazon's s3 logic wrapper`, files are stored
-in s3 through `localstack`, this by convenience and because I wanted
-to get familiar with aws java sdk.
+I realized that the idea of what a folder is, it's abstract, Kio has been made 
+as an `Amazon's s3 logic wrapper`, files are stored in s3 through `localstack`, 
+this by convenience and because I wanted to get familiar with aws java sdk 
+as I do not have a credit card.
 
 ### Features
 - Crud operations for users
@@ -20,7 +21,7 @@ to get familiar with aws java sdk.
 of the Copy/Cut file strategies for a total of 4 possible options
 
   - `OMIT` will not cut anything if a folder with the same name already exists
-  - `MIX` will combine the contents of both folders (including inner folders and its files)recursively
+  - `MIX` will combine the contents of both folders (including inner folders and its files) recursively
 
 - Share folders and files with other users
     - Sharing a folder will share all of its sub folders as well
@@ -35,6 +36,7 @@ needing to share your files and folders for long periods of time
 - MongoDB
 - Redis
 - s3 (localstack)
+- React Native (Kio app under development)
 
 I decided to switch from `PostgresDB` to `MongoDB` as it allows for faster reads, Redis is
 used to store short-lived sharing links

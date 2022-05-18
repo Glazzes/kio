@@ -26,7 +26,7 @@ class WebSecurityConfiguration(
 ): WebSecurityConfigurerAdapter() {
 
     @PostConstruct
-    fun applicationSecurityContextHolderStrategy() {
+    fun setContextHolderStrategy() {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL)
     }
 

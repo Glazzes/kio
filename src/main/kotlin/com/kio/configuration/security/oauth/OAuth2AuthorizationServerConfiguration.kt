@@ -3,6 +3,7 @@
 package com.kio.configuration.security.oauth
 
 import com.kio.configuration.properties.OAuthConfigurationProperties
+import com.kio.configuration.security.SecurityUserDetailsService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -21,6 +22,7 @@ import org.springframework.security.oauth2.provider.token.store.JwtTokenStore
 @EnableAuthorizationServer
 class OAuth2AuthorizationServerConfiguration(
     private val authenticationManager: AuthenticationManager,
+    private val userDetailsService: SecurityUserDetailsService,
     private val passwordEncoder: PasswordEncoder,
     private val oAuthConfigurationProperties: OAuthConfigurationProperties,
 ) : AuthorizationServerConfigurerAdapter() {
@@ -38,7 +40,8 @@ class OAuth2AuthorizationServerConfiguration(
     }
 
     override fun configure(security: AuthorizationServerSecurityConfigurer) {
-        security.passwordEncoder(passwordEncoder)
+        security
+            .passwordEncoder(passwordEncoder)
             .checkTokenAccess("permitAll()")
     }
 
@@ -59,6 +62,7 @@ class OAuth2AuthorizationServerConfiguration(
     override fun configure(endpoints: AuthorizationServerEndpointsConfigurer) {
         endpoints.authenticationManager(authenticationManager)
             .tokenStore(tokenStore())
+            .userDetailsService(userDetailsService) // allows refresh_token to work
             // .accessTokenConverter(this.tokenConverter())
     }
 
