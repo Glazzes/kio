@@ -1,15 +1,14 @@
 package com.kio.controllers
 
-import com.kio.dto.request.FileCopyRequest
-import com.kio.dto.request.FolderCopyRequest
-import com.kio.dto.response.find.FileDTO
+import com.kio.dto.request.file.FileCopyRequest
+import com.kio.dto.request.folder.FolderCopyRequest
 import com.kio.services.CopyService
 import com.kio.services.CutService
 import com.kio.shared.utils.ControllerUtil
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.BindingResult
-import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -22,7 +21,7 @@ class CopyCutController(
     private val cutService: CutService
 ){
 
-    @PostMapping("/folder/cut")
+    @PutMapping("/folder/cut")
     fun cutFolder(@RequestBody @Valid request: FolderCopyRequest, bindingResult: BindingResult): ResponseEntity<*> {
         if(bindingResult.hasFieldErrors()){
             val fieldErrors = ControllerUtil.getRequestErrors(bindingResult)
@@ -35,7 +34,7 @@ class CopyCutController(
             .body(dto)
     }
 
-    @PostMapping(path = ["/files/copy"])
+    @PutMapping(path = ["/files/copy"])
     fun copyFiles(@RequestBody @Valid request: FileCopyRequest, bindingResult: BindingResult): ResponseEntity<*> {
         if(bindingResult.hasFieldErrors()){
             val fieldErrors = ControllerUtil.getRequestErrors(bindingResult)
@@ -48,7 +47,7 @@ class CopyCutController(
             .body(cutFiles)
     }
 
-    @PostMapping(path = ["/files/cut"])
+    @PutMapping(path = ["/files/cut"])
     fun cutFiles(@RequestBody @Valid request: FileCopyRequest, bindingResult: BindingResult): ResponseEntity<*> {
         if(bindingResult.hasFieldErrors()){
             val fieldErrors = ControllerUtil.getRequestErrors(bindingResult)

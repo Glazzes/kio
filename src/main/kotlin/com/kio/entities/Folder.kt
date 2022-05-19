@@ -1,5 +1,6 @@
 package com.kio.entities
 
+import com.kio.entities.details.FileMetadata
 import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.FolderType
 import com.kio.entities.enums.Permission
@@ -19,5 +20,5 @@ class Folder(
     val files: MutableSet<String> = HashSet(),
     val contributors: MutableMap<String, Set<Permission>> = HashMap(),
     val sharedWith: MutableSet<String> = HashSet(),
-    val metadata: AuditFileMetadata,
+    val metadata: FileMetadata,
 )

@@ -1,13 +1,10 @@
 package com.kio.controllers
 
-import com.kio.dto.request.FolderCreateRequest
-import com.kio.dto.response.find.FileDTO
-import com.kio.dto.response.find.FolderDTO
-import com.kio.dto.response.save.SavedFolderDTO
-import com.kio.entities.enums.FileVisibility
-import com.kio.repositories.FolderRepository
+import com.kio.dto.request.folder.FolderCreateRequest
+import com.kio.dto.request.folder.FolderEditRequest
+import com.kio.dto.response.FileDTO
+import com.kio.dto.response.FolderDTO
 import com.kio.services.FolderService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -53,13 +50,12 @@ class FolderController(private val folderService: FolderService) {
             .body(folderService.findFolderSizeById(id))
     }
 
-    @PatchMapping(path = ["/{id}/state"])
-    fun modifyState(@PathVariable id: String, @RequestParam("new-state") newState: FileVisibility): ResponseEntity<Unit> {
-        folderService.modifyState(id, newState)
-        return ResponseEntity.status(HttpStatus.NO_CONTENT)
-            .build()
+    @PatchMapping(path = ["/{id}/edit"])
+    fun edit(@PathVariable id: String, @RequestBody request: FolderEditRequest): ResponseEntity<FolderDTO> {
+        val dto = folderService.edit(id, request)
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(dto)
     }
-
 
     @DeleteMapping(path = ["/{id}"])
     fun deleteById(@PathVariable id: String): ResponseEntity<Unit> {

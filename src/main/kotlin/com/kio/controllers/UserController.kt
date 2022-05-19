@@ -1,7 +1,8 @@
 package com.kio.controllers
 
-import com.kio.dto.response.find.UserDTO
+import com.kio.dto.response.UserDTO
 import com.kio.dto.request.SignUpRequest
+import com.kio.dto.request.TestingRequest
 import com.kio.services.UserService
 import com.kio.shared.utils.ControllerUtil
 import com.kio.shared.utils.SecurityUtil
@@ -14,6 +15,12 @@ import javax.validation.Valid
 @RestController
 @RequestMapping("/api/v1/users")
 class UserController(private val userService: UserService){
+
+    @GetMapping(path = ["/test"])
+    fun test(@RequestBody body: TestingRequest): ResponseEntity<*> {
+        return ResponseEntity.status(200)
+            .body(body.body)
+    }
 
     @PostMapping
     fun createNewUserAccount(
@@ -38,7 +45,8 @@ class UserController(private val userService: UserService){
             id = currentUser.id!!,
             username = currentUser.username,
             email = currentUser.email,
-            profilePictureUrl = currentUser.profilePicture.url)
+            profilePictureId = currentUser.profilePictureId
+        )
 
         return ResponseEntity.status(HttpStatus.OK)
             .body(dto)

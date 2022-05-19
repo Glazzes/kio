@@ -1,4 +1,4 @@
-package com.kio.entities
+package com.kio.entities.details
 
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.CreatedDate

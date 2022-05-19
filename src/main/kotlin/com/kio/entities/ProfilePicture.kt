@@ -1,5 +1,6 @@
 package com.kio.entities
 
+import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
@@ -9,9 +10,9 @@ import java.time.LocalDate
 @Document(collection = "profile_pictures")
 class ProfilePicture(
     @Id var id: String? = null,
-    val owner: String,
+    val bucketKey: String,
     val isActive: Boolean = true,
-    val url: String,
+    @CreatedBy var owner: String? = null,
     @CreatedDate var createdAt: LocalDate? = null,
     @LastModifiedDate var lastTimeUsed: LocalDate? = null
 )

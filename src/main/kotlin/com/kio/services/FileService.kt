@@ -3,14 +3,16 @@ package com.kio.services
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.amazonaws.services.s3.model.ObjectMetadata
-import com.kio.dto.request.FileDeleteRequest
-import com.kio.dto.response.find.FileDTO
+import com.kio.dto.request.file.FileDeleteRequest
+import com.kio.dto.request.file.FileEditRequest
+import com.kio.dto.response.FileDTO
 import com.kio.dto.response.modify.RenamedEntityDTO
-import com.kio.dto.response.save.SavedFileDTO
 import com.kio.entities.File
-import com.kio.entities.AuditFileMetadata
+import com.kio.entities.details.FileDetails
+import com.kio.entities.details.FileMetadata
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
+import com.kio.mappers.FileMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.IllegalOperationException
@@ -30,7 +32,7 @@ class FileService(
 ){
     private val kioBucket = "files.kio.com"
 
-    fun save(parentFolderId: String, files: List<MultipartFile>): Collection<SavedFileDTO> {
+    fun save(parentFolderId: String, files: List<MultipartFile>): Collection<FileDTO> {
         val parentFolder = this.findFolderById(parentFolderId)
         PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
 
@@ -50,12 +52,13 @@ class FileService(
 
             val fileToSave = File(
                 name = validName,
+                details = FileDetails(),
                 contentType = file.contentType ?: "UNKNOWN",
                 size = file.size,
                 bucketKey = key,
                 parentFolder = parentFolderId,
                 visibility = parentFolder.visibility,
-                metadata = AuditFileMetadata(parentFolder.metadata.ownerId)
+                metadata = FileMetadata(parentFolder.metadata.ownerId)
             )
 
             filesToSave.add(fileToSave)
@@ -67,23 +70,32 @@ class FileService(
             this.size += filesToSave.sumOf { it.size }
         })
 
-        return savedFiles.map {
-            SavedFileDTO(
-                id = it.id,
-                name = it.name,
-                size = it.size,
-                contentType = it.contentType,
-                createdAt = it.metadata.createdAt!!
-            ) }
+        return savedFiles.map { FileMapper.toFileDTO(it) }
     }
-
 
     fun findById(fileId: String): FileDTO {
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
         PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
 
-        return FileDTO(id = file.id!!, name = file.name, size = file.size, contentType = file.contentType)
+        return FileMapper.toFileDTO(file)
+    }
+
+    fun edit(id: String, request: FileEditRequest): FileDTO {
+        val file = this.findByIdInternal(id)
+        val parentFolder = this.findFolderById(file.parentFolder)
+
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+
+        val parentFilenames = fileRepository.findFilesNamesByParentId(file.parentFolder)
+            .map { it.getName() }
+
+        file.apply {
+            this.name = FileUtils.getValidName(request.name, parentFilenames)
+            this.visibility = request.visibility
+        }
+
+        return FileMapper.toFileDTO(file)
     }
 
     fun rename(fileId: String, newName: String): RenamedEntityDTO {

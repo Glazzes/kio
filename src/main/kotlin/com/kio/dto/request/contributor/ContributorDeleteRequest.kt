@@ -1,4 +1,4 @@
-package com.kio.dto.request
+package com.kio.dto.request.contributor
 
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotEmpty

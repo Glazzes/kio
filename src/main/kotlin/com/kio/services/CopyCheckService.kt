@@ -1,7 +1,8 @@
 package com.kio.services
 
-import com.kio.entities.AuditFileMetadata
+import com.kio.entities.details.FileMetadata
 import com.kio.entities.File
+import com.kio.entities.details.FileDetails
 import com.kio.entities.Folder
 import com.kio.entities.enums.FolderType
 import com.kio.repositories.FolderRepository
@@ -19,12 +20,13 @@ class CopyCheckService(
         return File(
             id = null,
             name = newName,
+            details = FileDetails(),
             contentType = file.contentType,
             size = file.size,
             bucketKey = bucketKey,
             parentFolder = parentFolder.id!!,
             visibility = parentFolder.visibility,
-            metadata = AuditFileMetadata(parentFolder.metadata.ownerId)
+            metadata = FileMetadata(parentFolder.metadata.ownerId)
         )
     }
 
@@ -44,7 +46,7 @@ class CopyCheckService(
             files = folder.files,
             contributors = parentFolder.contributors,
             sharedWith = mutableSetOf(),
-            metadata = AuditFileMetadata(parentFolder.metadata.ownerId)
+            metadata = FileMetadata(parentFolder.metadata.ownerId)
         )
     }
 

@@ -1,9 +1,9 @@
 package com.kio.controllers
 
-import com.kio.dto.request.FileDeleteRequest
-import com.kio.dto.response.find.FileDTO
+import com.kio.dto.request.file.FileDeleteRequest
+import com.kio.dto.request.file.FileEditRequest
+import com.kio.dto.response.FileDTO
 import com.kio.dto.response.modify.RenamedEntityDTO
-import com.kio.dto.response.save.SavedFileDTO
 import com.kio.services.FileService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,7 +18,7 @@ class FileController (val fileService: FileService){
     fun save(
         @PathVariable id: String,
         @RequestPart files: List<MultipartFile>
-    ): ResponseEntity<Collection<SavedFileDTO>> {
+    ): ResponseEntity<Collection<FileDTO>> {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(fileService.save(id, files))
     }
@@ -36,6 +36,13 @@ class FileController (val fileService: FileService){
     ): ResponseEntity<RenamedEntityDTO>{
         return ResponseEntity.status(HttpStatus.OK)
             .body(fileService.rename(fileId, filename))
+    }
+
+    @PatchMapping(path = ["/{id}/edit"])
+    fun edit(@PathVariable id: String, @RequestBody request: FileEditRequest): ResponseEntity<FileDTO> {
+        val dto = fileService.edit(id, request)
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(dto)
     }
 
     @DeleteMapping

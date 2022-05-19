@@ -14,10 +14,7 @@ import org.springframework.security.oauth2.provider.token.TokenStore
 
 @Configuration
 @EnableResourceServer
-class OAuth2ResourceServerConfiguration(
-    private val tokenStore: TokenStore,
-    private val authenticationManager: AuthenticationManager
-): ResourceServerConfigurerAdapter(){
+class OAuth2ResourceServerConfiguration : ResourceServerConfigurerAdapter(){
 
     override fun configure(resources: ResourceServerSecurityConfigurer) {
         resources.resourceId("kio-id")
@@ -27,10 +24,12 @@ class OAuth2ResourceServerConfiguration(
     }
 
     override fun configure(http: HttpSecurity) {
-        http.authorizeRequests()
-            .mvcMatchers(HttpMethod.POST,"/api/v1/users").permitAll()
-            .anyRequest()
-            .permitAll()
+        http.authorizeRequests {
+            it.antMatchers("/api/v1/pfp/me").authenticated()
+            it.antMatchers(HttpMethod.POST, "/api/v1/users").anonymous()
+            it.antMatchers(HttpMethod.GET, "/api/v1/pfp/{id}", "/api/v1/pfp/user/{id}").permitAll()
+            it.anyRequest().permitAll()
+        }
     }
 
 }

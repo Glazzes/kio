@@ -1,4 +1,4 @@
-package com.kio.dto.request
+package com.kio.dto.request.file
 
 import com.kio.shared.enums.FileCopyStrategy
 import javax.validation.constraints.NotBlank

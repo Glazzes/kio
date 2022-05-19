@@ -1,9 +1,9 @@
 package com.kio.services
 
-import com.kio.dto.response.find.ContributorDTO
-import com.kio.dto.request.ContributorDeleteRequest
-import com.kio.dto.request.ContributorUpdatePermissionsRequest
-import com.kio.dto.request.NewContributorRequest
+import com.kio.dto.response.ContributorDTO
+import com.kio.dto.request.contributor.ContributorDeleteRequest
+import com.kio.dto.request.contributor.ContributorUpdatePermissionsRequest
+import com.kio.dto.request.contributor.ContributorAddRequest
 import com.kio.entities.Folder
 import com.kio.entities.User
 import com.kio.entities.enums.FolderType
@@ -22,7 +22,7 @@ class ContributorService(
     private val userRepository: UserRepository
 ) {
 
-    fun save(folderId: String, contributorRequest: NewContributorRequest): ContributorDTO {
+    fun save(folderId: String, contributorRequest: ContributorAddRequest): ContributorDTO {
         val folder = this.findFolderById(folderId)
         PermissionValidatorUtil.isResourceOwner(folder)
 
@@ -47,7 +47,7 @@ class ContributorService(
         return UserMapper.toContributorInfo(contributor)
     }
 
-    private fun addContributorToSubFolders(folderIds: Collection<String>, request: NewContributorRequest) {
+    private fun addContributorToSubFolders(folderIds: Collection<String>, request: ContributorAddRequest) {
         val subFolders = folderRepository.findByIdIsIn(folderIds).map {
             it.apply { it.contributors[request.contributorId] = request.permissions }
         }

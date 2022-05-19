@@ -3,16 +3,16 @@ package com.kio.services
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.kio.configuration.properties.BucketConfigurationProperties
-import com.kio.dto.request.FileCopyRequest
-import com.kio.dto.response.find.FileDTO
+import com.kio.dto.request.file.FileCopyRequest
+import com.kio.dto.response.FileDTO
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
+import com.kio.mappers.FileMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.enums.FileCopyStrategy
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.CopyUtil
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
@@ -24,6 +24,7 @@ class CopyService(
     private val fileRepository: FileRepository,
     private val folderRepository: FolderRepository,
     private val bucketConfigurationProperties: BucketConfigurationProperties,
+    private val copyCheckService: CopyCheckService,
     private val s3: AmazonS3
 ){
 
@@ -56,7 +57,7 @@ class CopyService(
             val newName = FileUtils.getValidName(file.name, destinationFilenames)
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
 
-            val newFile = CopyUtil.cloneFile(file, destination, newName, bucketKey)
+            val newFile = copyCheckService.cloneFile(file, destination, newName, bucketKey)
             newFiles.add(newFile)
 
             val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)
@@ -64,7 +65,7 @@ class CopyService(
         }
 
         return fileRepository.saveAll(newFiles)
-            .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
+            .map { FileMapper.toFileDTO(it) }
     }
 
     private fun copyFilesWithOverwriteStrategy(
@@ -84,7 +85,7 @@ class CopyService(
         val newFiles = mutableSetOf<File>()
         for(file in sourceFiles) {
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
-            val newFile = CopyUtil.cloneFile(file, destination, file.name, bucketKey)
+            val newFile = copyCheckService.cloneFile(file, destination, file.name, bucketKey)
             newFiles.add(newFile)
 
             val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)
@@ -93,7 +94,7 @@ class CopyService(
 
         fileRepository.deleteAll(filesToDelete)
         return fileRepository.saveAll(newFiles)
-            .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
+            .map { FileMapper.toFileDTO(it) }
     }
 
     private fun findFolderById(id: String): Folder {

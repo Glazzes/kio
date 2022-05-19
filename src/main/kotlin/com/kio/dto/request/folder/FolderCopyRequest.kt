@@ -1,4 +1,4 @@
-package com.kio.dto.request
+package com.kio.dto.request.folder
 
 import com.kio.shared.enums.FileCopyStrategy
 import com.kio.shared.enums.FolderCopyStrategy

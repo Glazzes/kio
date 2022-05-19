@@ -1,4 +1,4 @@
-package com.kio.entities
+package com.kio.entities.details
 
 data class FileDetails(
     val dimensions: String? = null,

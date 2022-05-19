@@ -1,10 +1,10 @@
-package com.kio.dto.request
+package com.kio.dto.request.contributor
 
 import com.kio.entities.enums.Permission
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotEmpty
 
-data class NewContributorRequest(
+data class ContributorAddRequest(
 
     @get:NotBlank(message = "Contributor id must not be a blank string")
     val contributorId: String,

@@ -1,6 +1,6 @@
-package com.kio.dto.response.find
+package com.kio.dto.response
 
-import com.kio.entities.FileDetails
+import com.kio.entities.details.FileDetails
 import java.time.LocalDate
 
 data class FileDTO(

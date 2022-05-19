@@ -2,15 +2,16 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
-import com.kio.dto.request.FileCopyRequest
-import com.kio.dto.request.FolderCopyRequest
-import com.kio.dto.response.find.ContributorDTO
-import com.kio.dto.response.find.FileDTO
-import com.kio.dto.response.find.FolderDTO
-import com.kio.entities.AuditFileMetadata
+import com.kio.dto.request.file.FileCopyRequest
+import com.kio.dto.request.folder.FolderCopyRequest
+import com.kio.dto.response.ContributorDTO
+import com.kio.dto.response.FileDTO
+import com.kio.dto.response.FolderDTO
+import com.kio.entities.details.FileMetadata
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
+import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
@@ -45,13 +46,15 @@ class CutService(
         }
 
         if(request.folderCopyStrategy == FolderCopyStrategy.OMIT) {
-            return this.cutFolderWithOmitStrategy(source, destination, request)
+            this.cutFolderWithOmitStrategy(source, destination, request)
+            return emptyList()
         }
 
-        return this.cutFolderWithMixStrategy(source, destination, request)
+        this.cutFolderWithMixStrategy(source, destination, request)
+        return emptyList()
     }
 
-    private fun cutFolderWithOmitStrategy(source: Folder, destination: Folder, request: FolderCopyRequest): Collection<FolderDTO> {
+    private fun cutFolderWithOmitStrategy(source: Folder, destination: Folder, request: FolderCopyRequest): FolderDTO {
         val destinationSubFolders = folderRepository.findByIdIsIn(destination.subFolders)
             .associateBy { it.name }
 
@@ -62,10 +65,10 @@ class CutService(
         val sourceParent = this.findFolderById(source.parentFolder!!)
         folderRepository.save(sourceParent.apply { subFolders.remove(request.source) })
         folderRepository.save(destination.apply { subFolders.add(request.source) })
-        return setOf(FolderDTO(destination.id!!, destination.name, destination.color, this.findFolderContributors(destination)))
+        return FolderMapper.toFolderDTO(destination, this.findFolderContributors(destination))
     }
 
-    private fun cutFolderWithMixStrategy(source: Folder, destination: Folder, request: FolderCopyRequest): Collection<FolderDTO> {
+    private fun cutFolderWithMixStrategy(source: Folder, destination: Folder, request: FolderCopyRequest) {
         val sourceParent = this.findFolderById(source.parentFolder!!)
         val destinationSubFolders = folderRepository.findByIdIsIn(destination.subFolders)
             .associateBy { it.name }
@@ -78,7 +81,7 @@ class CutService(
             source.parentFolder = destination.id!!
 
             folderRepository.saveAll(listOf(sourceParent, source, destination))
-            return emptyList()
+            return
         }else {
             val sourceFiles = fileRepository.findByIdIsIn(source.files)
             val destinationFiles = fileRepository.findByIdIsIn(destinationSubFolder.files)
@@ -115,7 +118,6 @@ class CutService(
         }
 
         folderRepository.delete(source)
-        return emptyList()
     }
 
     fun cutFiles(request: FileCopyRequest): Collection<FileDTO> {
@@ -158,7 +160,7 @@ class CutService(
 
         val cutFiles = sourceFiles.map { it.apply {
             parentFolder = destination.id!!
-            metadata = AuditFileMetadata(destination.metadata.ownerId)
+            metadata = FileMetadata(destination.metadata.ownerId)
         } }
 
         if(destinationFilesToDelete.isNotEmpty()) {
@@ -198,7 +200,7 @@ class CutService(
         val cutFiles = sourceFiles.map { it.apply {
             name = FileUtils.getValidName(this.name, destinationFileNames)
             parentFolder = destination.id!!
-            metadata = AuditFileMetadata(destination.metadata.ownerId)
+            metadata = FileMetadata(destination.metadata.ownerId)
         } }
 
         val newFileIds = cutFiles.map { it.id!! }.toSet()

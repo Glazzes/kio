@@ -1,4 +1,4 @@
-package com.kio.dto.response.find
+package com.kio.dto.response
 
 data class UserDTO(
     val id: String,

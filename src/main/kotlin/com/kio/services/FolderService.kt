@@ -2,17 +2,18 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
-import com.kio.dto.request.FolderCreateRequest
-import com.kio.dto.response.find.ContributorDTO
-import com.kio.dto.response.find.FileDTO
-import com.kio.dto.response.save.SavedFolderDTO
-import com.kio.dto.response.find.FolderDTO
-import com.kio.entities.AuditFileMetadata
+import com.kio.dto.request.folder.FolderCreateRequest
+import com.kio.dto.request.folder.FolderEditRequest
+import com.kio.dto.response.ContributorDTO
+import com.kio.dto.response.FileDTO
+import com.kio.dto.response.FolderDTO
+import com.kio.entities.details.FileMetadata
 import com.kio.entities.Folder
 import com.kio.entities.User
 import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.FolderType
 import com.kio.entities.enums.Permission
+import com.kio.mappers.FileMapper
 import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
@@ -41,13 +42,13 @@ class FolderService(
         val rootFolder = Folder(
             name = "My unit",
             folderType = FolderType.ROOT,
-            metadata = AuditFileMetadata(ownerId = user.id!!, lastModifiedBy = user.id!!),
+            metadata = FileMetadata(ownerId = user.id!!, lastModifiedBy = user.id!!),
             visibility = FileVisibility.OWNER)
 
         folderRepository.save(rootFolder)
     }
 
-    fun save(parentFolderId: String, request: FolderCreateRequest): SavedFolderDTO {
+    fun save(parentFolderId: String, request: FolderCreateRequest): FolderDTO {
         val parentFolder = this.findByInternal(parentFolderId)
         PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
 
@@ -63,7 +64,7 @@ class FolderService(
             visibility = parentFolder.visibility,
             contributors = parentFolder.contributors,
             parentFolder = parentFolderId,
-            metadata = AuditFileMetadata(parentFolder.metadata.ownerId)
+            metadata = FileMetadata(parentFolder.metadata.ownerId)
         )
 
         val savedFolder = folderRepository.save(newFolder)
@@ -71,7 +72,24 @@ class FolderService(
         parentFolder.subFolders.add(savedFolder.id!!)
         folderRepository.save(parentFolder)
 
-        return SavedFolderDTO(savedFolder.id!!, savedFolder.name, savedFolder.metadata.createdAt!!)
+        return FolderMapper.toFolderDTO(newFolder, emptyList())
+    }
+
+    fun edit(id: String, request: FolderEditRequest): FolderDTO {
+        val folder = this.findByInternal(id)
+        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_WRITE)
+
+        val folderNames = folderRepository.findFolderNamesByParentId(folder.id!!)
+            .map { it.getName() }
+
+        folder.apply {
+            this.color = request.color
+            this.name = FileUtils.getValidName(request.name, folderNames)
+            this.visibility = request.visibility
+        }
+
+        val editedFolder = folderRepository.save(folder)
+        return FolderMapper.toFolderDTO(editedFolder, this.findFolderContributors(editedFolder))
     }
 
     fun findCurrentUserUnit(): FolderDTO {
@@ -102,24 +120,18 @@ class FolderService(
     fun findFilesByFolderId(id: String): Collection<FileDTO> {
         val folder = this.findByInternal(id)
         return fileRepository.findByIdIsIn(folder.files)
-            .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
+            .map { FileMapper.toFileDTO(it) }
     }
 
-    private fun findFolderContributors(folder: Folder): Set<ContributorDTO> {
+    private fun findFolderContributors(folder: Folder): Collection<ContributorDTO> {
         val contributors = userRepository.findByIdIn(folder.contributors.keys)
-        return contributors.map { ContributorDTO(it.id, it.username, it.profilePicture.url) }
+        return contributors.map { ContributorDTO(it.id, it.username, it.profilePictureId) }
             .toSet()
     }
 
     fun findFolderSizeById(id: String): Long {
         val folder = this.findByInternal(id)
        return spaceService.calculateFolderSize(folder)
-    }
-
-    fun modifyState(id: String, state: FileVisibility) {
-        val folder = this.findByInternal(id)
-        folder.visibility = state
-        folderRepository.save(folder)
     }
 
     fun deleteById(id: String) {

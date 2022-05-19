@@ -1,8 +1,8 @@
 package com.kio.controllers
 
-import com.kio.dto.request.ContributorDeleteRequest
-import com.kio.dto.request.ContributorUpdatePermissionsRequest
-import com.kio.dto.request.NewContributorRequest
+import com.kio.dto.request.contributor.ContributorDeleteRequest
+import com.kio.dto.request.contributor.ContributorUpdatePermissionsRequest
+import com.kio.dto.request.contributor.ContributorAddRequest
 import com.kio.services.ContributorService
 import com.kio.shared.utils.ControllerUtil
 import org.springframework.http.HttpStatus
@@ -18,7 +18,7 @@ class ContributorController(private val contributorService: ContributorService) 
     @PostMapping(path = ["/folder/{id}"])
     fun save(
         @PathVariable id: String,
-        @RequestBody @Valid contributorRequest: NewContributorRequest,
+        @RequestBody @Valid contributorRequest: ContributorAddRequest,
         bindingResult: BindingResult
     ): ResponseEntity<*> {
         if(bindingResult.hasFieldErrors()){

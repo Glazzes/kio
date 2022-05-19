@@ -1,4 +1,4 @@
-package com.kio.dto.request
+package com.kio.dto.request.file
 
 data class FileDeleteRequest(
     val from: String,
