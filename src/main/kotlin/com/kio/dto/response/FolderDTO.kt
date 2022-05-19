@@ -4,5 +4,5 @@ data class FolderDTO(
     val id: String,
     val name: String,
     val color: String,
-    val contributor: Set<ContributorDTO>,
+    val contributors: Collection<ContributorDTO>,
 )

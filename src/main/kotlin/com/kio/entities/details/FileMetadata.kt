@@ -6,7 +6,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 
-class AuditFileMetadata(
+class FileMetadata(
     val ownerId: String,
     @CreatedBy var createdBy: String? = null,
     @LastModifiedBy var lastModifiedBy: String? = null,
