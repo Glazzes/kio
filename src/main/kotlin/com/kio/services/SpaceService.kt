@@ -3,20 +3,24 @@ package com.kio.services
 import com.kio.entities.Folder
 import com.kio.entities.enums.FolderType
 import com.kio.repositories.FolderRepository
+import com.kio.repositories.UserRepository
+import com.kio.shared.exception.InsufficientStorageException
 import org.springframework.stereotype.Service
 
 @Service
 class SpaceService(
+    private val userRepository: UserRepository,
     private val folderRepository: FolderRepository
 ){
 
-    fun checkUnitSize(folder: Folder) {
-        val userUnitFolder = folderRepository.findByMetadataOwnerIdAndFolderType(
-            folder.metadata.ownerId,
-            FolderType.ROOT
-        )
+    fun canUpload(folder: Folder, uploadSize: Long) {
+        val folderOwner = userRepository.findById(folder.metadata.ownerId).get()
+        val userUnitFolder = folderRepository.findByMetadataOwnerIdAndFolderType(folderOwner.id!!, FolderType.ROOT)
 
-        val unitSize = this.calculateFolderSize(folder)
+        val totalSize = uploadSize + this.calculateFolderSize(folder)
+        if(totalSize > folderOwner.plan.space) {
+            throw InsufficientStorageException("Performing this operation will exceed user's unit capacity")
+        }
     }
 
     fun calculateFolderSize(folder: Folder): Long {

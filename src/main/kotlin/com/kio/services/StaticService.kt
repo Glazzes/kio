@@ -10,6 +10,11 @@ import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 @Service
 class StaticService(
@@ -19,9 +24,9 @@ class StaticService(
     private val buckets: BucketConfigurationProperties
 ){
 
-    fun downloadFileById(fileId: String): StaticResponseDTO {
-        val file = fileRepository.findById(fileId)
-            .orElseThrow { NotFoundException("File with id $fileId does not exists") }
+    fun downloadFileById(id: String): StaticResponseDTO {
+        val file = fileRepository.findById(id)
+            .orElseThrow { NotFoundException("File with id $id does not exists") }
 
         val parentFolder = folderRepository.findById(file.parentFolder)
             .orElseThrow { NotFoundException("Folder with id ${file.parentFolder} does not exists") }
@@ -34,6 +39,10 @@ class StaticService(
             .objectContent
 
         return StaticResponseDTO(file.contentType, content)
+    }
+
+    fun downloadFolderById(id: String, response: HttpServletResponse) {
+
     }
 
 }

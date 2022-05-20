@@ -20,7 +20,6 @@ import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
 import com.kio.shared.enums.FolderCreationStrategy
 import com.kio.shared.exception.AlreadyExistsException
-import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
@@ -92,7 +91,7 @@ class FolderService(
         return FolderMapper.toFolderDTO(editedFolder, this.findFolderContributors(editedFolder))
     }
 
-    fun findCurrentUserUnit(): FolderDTO {
+    fun findAuthenticatedUserUnit(): FolderDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT) ?:
             throw IllegalStateException("This user does not have an unit, how?!!!")
@@ -105,6 +104,12 @@ class FolderService(
         PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_ONLY)
 
         return FolderMapper.toFolderDTO(folder, this.findFolderContributors(folder))
+    }
+
+    fun findAuthenticatedUserSharedFolders(): Collection<FolderDTO> {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        return folderRepository.findBySharedWithContains(authenticatedUser.id!!)
+            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
     }
 
     fun findSubFoldersByParentId(id: String): Set<FolderDTO> {
@@ -134,21 +139,25 @@ class FolderService(
        return spaceService.calculateFolderSize(folder)
     }
 
-    fun deleteById(id: String) {
-        val exists = folderRepository.existsById(id)
-        if(!exists) {
-            throw NotFoundException("You can no delete a folder that does not exists.")
+    fun deleteAll(from: String, subFoldersIds: Collection<String>) {
+        val parentFolder = this.findByInternal(from)
+
+        if(!parentFolder.subFolders.containsAll(subFoldersIds)) {
+            throw NotFoundException("At least one of the folders to delete does not belong to its parent")
         }
 
-        val folder = this.findByInternal(id)
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.DELETE)
-        if(folder.folderType == FolderType.ROOT) {
-            throw IllegalOperationException("You can not delete your a unit folder")
+        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.DELETE)
+        val subFolders = folderRepository.findByIdIsIn(subFoldersIds)
+        for(sub in subFolders) {
+            this.deleteSubFoldersAndFiles(sub.subFolders)
         }
 
-        folderRepository.delete(folder)
-        fileRepository.deleteAllById(folder.files)
-        deleteSubFoldersAndFiles(folder.subFolders)
+        folderRepository.save(parentFolder.apply {
+            this.subFolders.removeAll(subFoldersIds.toSet())
+            this.summary.subFolders -= subFolders.size
+        })
+
+        folderRepository.deleteAll(subFolders)
     }
 
     private fun deleteSubFoldersAndFiles(subFolderIds: Collection<String>) {
@@ -161,11 +170,11 @@ class FolderService(
         folderRepository.deleteAll(subFolders)
         fileRepository.deleteAll(filesToDelete)
 
-        val deleteObjectsRequest = DeleteObjectsRequest("files.kio.com")
-        deleteObjectsRequest.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
-        s3.deleteObjects(deleteObjectsRequest)
+        if(filesToDelete.isNotEmpty()) {
+            val deleteObjectsRequest = DeleteObjectsRequest("files.kio.com")
+            deleteObjectsRequest.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+            s3.deleteObjects(deleteObjectsRequest)
 
-        if(foldersToDelete.isNotEmpty()) {
             deleteSubFoldersAndFiles(foldersToDelete)
         }
     }

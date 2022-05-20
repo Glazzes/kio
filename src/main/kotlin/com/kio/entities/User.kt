@@ -1,5 +1,6 @@
 package com.kio.entities
 
+import com.kio.entities.enums.Plan
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -9,6 +10,6 @@ class User (
     var username: String,
     var password: String,
     var email: String,
-    var profilePicture: ProfilePicture? = null,
-    val unitSummary: UnitSummary
+    var profilePicture: ProfilePicture,
+    var plan: Plan = Plan.BASIC
 )

@@ -19,20 +19,20 @@ aws:
 spring:
   servlet:
     multipart:
-      max-file-size: 1GB
-      max-request-size: 1GB
+      max-file-size: 100MB
+      max-request-size: 200MB
       enabled: true
 
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    username: glaze
-    password: dalmatian
-    url: jdbc:postgresql://postgres:5432/kio
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    database-platform: com.kio.configuration.pg.CustomDialect
+  #datasource:
+  #  driver-class-name: org.postgresql.Driver
+  #  username: glaze
+  #  password: dalmatian
+  #  url: jdbc:postgresql://postgres:5432/kio
+  #jpa:
+  #  hibernate:
+  #    ddl-auto: create-drop
+  #  show-sql: true
+  #  database-platform: com.kio.configuration.pg.CustomDialect
 
   data:
     mongodb:

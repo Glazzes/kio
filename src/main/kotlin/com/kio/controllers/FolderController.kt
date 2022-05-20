@@ -16,7 +16,13 @@ class FolderController(private val folderService: FolderService) {
     @GetMapping(path = ["/my-unit"])
     fun findAuthenticatedUserUnit(): ResponseEntity<FolderDTO> {
         return ResponseEntity.status(HttpStatus.OK)
-            .body(folderService.findCurrentUserUnit())
+            .body(folderService.findAuthenticatedUserUnit())
+    }
+
+    @GetMapping("/shared")
+    fun findSharedFolders(): ResponseEntity<Collection<FolderDTO>> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(folderService.findAuthenticatedUserSharedFolders())
     }
 
     @GetMapping(path = ["/{id}"])
@@ -26,7 +32,7 @@ class FolderController(private val folderService: FolderService) {
     }
 
     @PostMapping(path = ["/{id}"])
-    fun save(@PathVariable id: String, @RequestBody request: FolderCreateRequest): ResponseEntity<SavedFolderDTO> {
+    fun save(@PathVariable id: String, @RequestBody request: FolderCreateRequest): ResponseEntity<FolderDTO> {
         val createdFolderDTO = folderService.save(id, request)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(createdFolderDTO)
@@ -58,8 +64,8 @@ class FolderController(private val folderService: FolderService) {
     }
 
     @DeleteMapping(path = ["/{id}"])
-    fun deleteById(@PathVariable id: String): ResponseEntity<Unit> {
-        folderService.deleteById(id)
+    fun delete(@PathVariable id: String, @RequestBody subFolders: Collection<String>): ResponseEntity<Unit> {
+        folderService.deleteAll(id, subFolders)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

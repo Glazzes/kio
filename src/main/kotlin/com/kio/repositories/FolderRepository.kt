@@ -14,6 +14,8 @@ interface FolderRepository : MongoRepository<Folder, String> {
     fun findByMetadataOwnerIdAndFolderType(id: String, folderType: FolderType): Folder?
     fun findByIdIsIn(ids: Collection<String>): Collection<Folder>
 
+    fun findBySharedWithContains(id: String): Collection<Folder>
+
     @Query(value = "{_id: {\$in: ?0}}")
     fun findSubFolderIdsByParentIds(ids: Collection<String>): Collection<SubFoldersProjection>
 

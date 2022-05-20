@@ -2,10 +2,11 @@ package com.kio.services
 
 import com.kio.dto.request.SignUpRequest
 import com.kio.dto.response.UserDTO
-import com.kio.entities.UnitSummary
+import com.kio.entities.ProfilePicture
 import com.kio.entities.User
 import com.kio.mappers.UserMapper
 import com.kio.repositories.UserRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -15,19 +16,19 @@ class UserService(
     val folderService: FolderService,
     val passwordEncoder: PasswordEncoder,
 ){
+    @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
 
     fun save(signUpRequest: SignUpRequest): UserDTO {
         val encodedPassword = passwordEncoder.encode(signUpRequest.password)
 
-        val newUser = User(
+        val newUser = User (
             username = signUpRequest.username,
             password = encodedPassword,
             email = signUpRequest.email,
-            unitSummary = UnitSummary(),
+            profilePicture = ProfilePicture(bucketKey = defaultProfilePictureKey)
         )
 
         val createdUser = userRepository.save(newUser)
-
         folderService.saveRootFolderForNewUser(createdUser)
         return UserMapper.toUserDTO(newUser)
     }

@@ -11,8 +11,7 @@ import java.time.LocalDate
 class ProfilePicture(
     @Id var id: String? = null,
     val bucketKey: String,
-    val isActive: Boolean = true,
+    var isActive: Boolean = true,
     @CreatedBy var owner: String? = null,
-    @CreatedDate var createdAt: LocalDate? = null,
     @LastModifiedDate var lastTimeUsed: LocalDate? = null
 )

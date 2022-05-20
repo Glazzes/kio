@@ -11,6 +11,7 @@ import com.kio.entities.details.FileMetadata
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
+import com.kio.mappers.FileMapper
 import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
@@ -82,17 +83,17 @@ class CutService(
 
             folderRepository.saveAll(listOf(sourceParent, source, destination))
             return
-        }else {
-            val sourceFiles = fileRepository.findByIdIsIn(source.files)
-            val destinationFiles = fileRepository.findByIdIsIn(destinationSubFolder.files)
+        }
 
-            if(request.fileCopyStrategy == FileCopyStrategy.OVERWRITE) {
-                this.cutFilesWithOverwriteStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
-            }
+        val sourceFiles = fileRepository.findByIdIsIn(source.files)
+        val destinationFiles = fileRepository.findByIdIsIn(destinationSubFolder.files)
 
-            if(request.fileCopyStrategy == FileCopyStrategy.RENAME) {
-                this.cutFilesWithRenameStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
-            }
+        if(request.fileCopyStrategy == FileCopyStrategy.OVERWRITE) {
+            this.cutFilesWithOverwriteStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
+        }
+
+        if(request.fileCopyStrategy == FileCopyStrategy.RENAME) {
+            this.cutFilesWithRenameStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
         }
 
         val sourceSubFolders = folderRepository.findByIdIsIn(source.subFolders)
@@ -184,7 +185,7 @@ class CutService(
         fileRepository.deleteAll(destinationFilesToDelete)
 
         return fileRepository.saveAll(cutFiles)
-            .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
+            .map { FileMapper.toFileDTO(it) }
     }
 
     private fun cutFilesWithRenameStrategy(
@@ -211,13 +212,13 @@ class CutService(
             size += sourceFilesSize
         })
         return fileRepository.saveAll(cutFiles)
-            .map { FileDTO(it.id!!, it.name, it.size, it.contentType) }
+            .map { FileMapper.toFileDTO(it) }
     }
 
     // repeated
     private fun findFolderContributors(folder: Folder): Set<ContributorDTO> {
         val contributors = userRepository.findByIdIn(folder.contributors.keys)
-        return contributors.map { ContributorDTO(it.id, it.username, it.profilePicture.url) }
+        return contributors.map { ContributorDTO(it.id, it.username, "") }
             .toSet()
     }
 

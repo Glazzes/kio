@@ -1,6 +1,7 @@
 package com.kio
 
 import com.kio.configuration.aws.AwsProperties
+import com.kio.configuration.population.S3PopulationConfig
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.configuration.properties.OAuthConfigurationProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -13,15 +14,24 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing
 import org.springframework.scheduling.annotation.EnableAsync
 
 @EnableAsync
+@EnableMongoAuditing
+@EnableConfigurationProperties(
+	value = [
+		OAuthConfigurationProperties::class,
+		AwsProperties::class,
+		BucketConfigurationProperties::class,
+	])
 @SpringBootApplication(
 	exclude = [
+		HibernateJpaAutoConfiguration::class,
 		DataSourceAutoConfiguration::class,
-		DataSourceTransactionManagerAutoConfiguration::class,
-		HibernateJpaAutoConfiguration::class
+		DataSourceTransactionManagerAutoConfiguration::class
 	])
-@EnableMongoAuditing
-@EnableConfigurationProperties(value = [OAuthConfigurationProperties::class, AwsProperties::class, BucketConfigurationProperties::class])
-class KioApplication
+class KioApplication(s3PopulationConfig: S3PopulationConfig) {
+	init {
+	    s3PopulationConfig.saveDefaultProfilePicture()
+	}
+}
 
 fun main(args: Array<String>) {
 	runApplication<KioApplication>(*args)

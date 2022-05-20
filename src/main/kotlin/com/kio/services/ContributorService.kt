@@ -44,7 +44,7 @@ class ContributorService(
         folderRepository.save(folder)
 
         this.addContributorToSubFolders(folder.subFolders, contributorRequest)
-        return UserMapper.toContributorInfo(contributor)
+        return UserMapper.toContributorDTO(contributor)
     }
 
     private fun addContributorToSubFolders(folderIds: Collection<String>, request: ContributorAddRequest) {

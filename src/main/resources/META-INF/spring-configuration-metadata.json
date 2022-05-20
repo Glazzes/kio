@@ -1,6 +1,11 @@
 {
   "properties": [
     {
+      "name": "kio.default-pfp-key",
+      "type": "java.lang.String",
+      "description": "Id that represents the default profile picture in s3 profile picture bucket"
+    },
+    {
       "name": "kio.oauth.client.id",
       "type": "java.lang.String",
       "description": "Id of the InMemory OAuth client"
