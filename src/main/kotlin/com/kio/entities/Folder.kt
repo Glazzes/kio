@@ -12,7 +12,6 @@ import org.springframework.data.mongodb.core.mapping.Document
 class Folder(
     @Id var id: String? = null,
     var name: String,
-    var size: Long = 0,
     var folderType: FolderType = FolderType.REGULAR,
     var visibility: FileVisibility = FileVisibility.OWNER,
     var color: String = "#3366ff",

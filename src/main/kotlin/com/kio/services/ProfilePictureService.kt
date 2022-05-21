@@ -46,6 +46,11 @@ class ProfilePictureService (
         userRepository.save(authenticatedUser.apply { this.profilePicture = profilePicture })
     }
 
+    fun findDefault(): StaticResponseDTO {
+        val s3Picture = s3.getObject(bucketProperties.filesBucket, defaultProfilePictureKey)
+        return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
+    }
+
     fun findMine(): StaticResponseDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val s3Picture = s3.getObject(bucketProperties.filesBucket, authenticatedUser.profilePicture.bucketKey)

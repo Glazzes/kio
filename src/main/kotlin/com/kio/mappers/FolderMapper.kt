@@ -10,6 +10,7 @@ object FolderMapper {
         id = folder.id!!,
         name = folder.name,
         color = folder.color,
+        summary = folder.summary,
         contributors = contributors
     )
 

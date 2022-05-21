@@ -1,14 +1,17 @@
 ## Kio
 
 ### About
-Kio it's a file manager backend (this project) & mobile app such as Google Drive or
+Kio it's a file manager backend (this project) and React Native mobile app such as Google Drive or
 Dropbox where users can store, visualize, share and download
 their files at any time.
 
-I realized that the idea of what a folder is, it's abstract, Kio has been made 
-as an `Amazon's s3 logic wrapper`, files are stored in s3 through `localstack`, 
+Kio has been made as an `Amazon's s3 logic wrapper`, files are stored in s3 through `localstack`, 
 this by convenience and because I wanted to get familiar with aws java sdk 
 as I do not have a credit card.
+
+### What I've learned with this project
+- Get more comfortable at writing recursive functions as this project requires a 
+ton of recursion functions due to its tree structure
 
 ### Features
 - Crud operations for users
@@ -22,7 +25,7 @@ of the Copy/Cut file strategies for a total of 4 possible options
 
   - `OMIT` will not cut anything if a folder with the same name already exists
   - `MIX` will combine the contents of both folders (including inner folders and its files) recursively
-
+- Download files, folders are downloaded in zip format
 - Share folders and files with other users
     - Sharing a folder will share all of its sub folders as well
 - Allow non kio users to see your files (turn your files into public files)

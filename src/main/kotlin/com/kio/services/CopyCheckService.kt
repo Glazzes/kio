@@ -37,7 +37,6 @@ class CopyCheckService(
         return Folder(
             id = null,
             name = FileUtils.getValidName(folder.name, subFolderNames),
-            size = folder.size,
             folderType = folder.folderType,
             visibility = parentFolder.visibility,
             color = folder.color,
@@ -46,7 +45,8 @@ class CopyCheckService(
             files = folder.files,
             contributors = parentFolder.contributors,
             sharedWith = mutableSetOf(),
-            metadata = FileMetadata(parentFolder.metadata.ownerId)
+            metadata = FileMetadata(parentFolder.metadata.ownerId),
+            summary = folder.summary
         )
     }
 

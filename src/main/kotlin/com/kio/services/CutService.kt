@@ -173,13 +173,14 @@ class CutService(
         }
 
         folderRepository.save(source.apply {
-            files.removeAll(sourceIdsToDelete)
-            size -= sourceFilesSize
+            this.files.removeAll(sourceIdsToDelete)
+            this.summary.files += (cutFiles.size - destinationFilesToDelete.size)
+            this.summary.size -= sourceFilesSize
         })
 
         folderRepository.save(destination.apply {
             files.addAll(sourceIdsToDelete)
-            size += (sourceFilesSize - destinationFilesToDeleteSize)
+            this.summary.size += (sourceFilesSize - destinationFilesToDeleteSize)
         })
 
         fileRepository.deleteAll(destinationFilesToDelete)
@@ -208,8 +209,9 @@ class CutService(
 
         folderRepository.save(source.apply { files.removeAll(sourceIdsToDelete) })
         folderRepository.save(destination.apply {
-            files.addAll(newFileIds)
-            size += sourceFilesSize
+            this.files.addAll(newFileIds)
+            this.summary.size += sourceFilesSize
+            this.summary.files += cutFiles.size
         })
         return fileRepository.saveAll(cutFiles)
             .map { FileMapper.toFileDTO(it) }

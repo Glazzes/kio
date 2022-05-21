@@ -12,7 +12,7 @@ import java.nio.file.Paths
 @Component
 class S3PopulationConfig(
     private val s3: AmazonS3,
-    private val bucketProperties: BucketConfigurationProperties
+    private val buckets: BucketConfigurationProperties
 ){
     @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
 
@@ -25,7 +25,7 @@ class S3PopulationConfig(
             this.contentLength = defaultPicture.contentLength()
         }
 
-        s3.putObject(bucketProperties.profilePicturesBucket, defaultProfilePictureKey, defaultPicture.inputStream, metadata)
+        s3.putObject(buckets.profilePicturesBucket, defaultProfilePictureKey, defaultPicture.inputStream, metadata)
     }
 
 }

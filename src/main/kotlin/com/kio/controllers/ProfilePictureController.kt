@@ -19,6 +19,14 @@ class ProfilePictureController(
     private val profilePictureService: ProfilePictureService
 ){
 
+    @GetMapping(path = ["/default"])
+    fun findDefault(): ResponseEntity<InputStreamResource> {
+        val static = profilePictureService.findDefault()
+        return ResponseEntity.status(HttpStatus.OK)
+            .contentType(MediaType.valueOf(static.contentType))
+            .body(InputStreamResource(static.inputStream))
+    }
+
     @GetMapping(path = ["/me"])
     fun findMine(): ResponseEntity<InputStreamResource> {
         val static = profilePictureService.findMine()

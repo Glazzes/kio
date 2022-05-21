@@ -67,9 +67,10 @@ class FolderService(
         )
 
         val savedFolder = folderRepository.save(newFolder)
-
-        parentFolder.subFolders.add(savedFolder.id!!)
-        folderRepository.save(parentFolder)
+        folderRepository.save(parentFolder.apply {
+            this.subFolders.add(savedFolder.id!!)
+            this.summary.folders++
+        })
 
         return FolderMapper.toFolderDTO(newFolder, emptyList())
     }
@@ -118,7 +119,7 @@ class FolderService(
 
         return folderRepository.findByIdIsIn(folder.subFolders)
             .filter { PermissionValidatorUtil.isFoldersOwner(it) || it.visibility != FileVisibility.OWNER }
-            .map { FolderDTO(it.id!!, it.name, it.color, this.findFolderContributors(it)) }
+            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
             .toSet()
     }
 
@@ -154,7 +155,7 @@ class FolderService(
 
         folderRepository.save(parentFolder.apply {
             this.subFolders.removeAll(subFoldersIds.toSet())
-            this.summary.subFolders -= subFolders.size
+            this.summary.folders -= subFolders.size
         })
 
         folderRepository.deleteAll(subFolders)
