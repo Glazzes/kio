@@ -20,7 +20,7 @@ class ProfilePictureService (
     private val s3: AmazonS3,
     private val bucketProperties: BucketConfigurationProperties,
     private val userRepository: UserRepository,
-    private val profilePictureRepository: ProfilePictureRepository
+    private val profilePictureRepository: ProfilePictureRepository,
 ){
 
     @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String

@@ -7,13 +7,17 @@ import com.kio.shared.utils.ControllerUtil
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 import org.springframework.validation.BindingResult
 import org.springframework.web.bind.annotation.*
+import java.security.Principal
 import javax.validation.Valid
 
 @RestController
 @RequestMapping("/api/v1/users")
-class UserController(private val userService: UserService) {
+class UserController(
+    private val userService: UserService,
+) {
 
     @PostMapping
     fun createNewUserAccount(
@@ -31,14 +35,14 @@ class UserController(private val userService: UserService) {
     }
 
     @GetMapping(path = ["/me"])
-    fun me(): ResponseEntity<UserDTO> {
+    fun me(principal: Principal): ResponseEntity<UserDTO> {
         val currentUser = SecurityUtil.getAuthenticatedUser()
 
         val dto = UserDTO(
             id = currentUser.id!!,
             username = currentUser.username,
             email = currentUser.email,
-            profilePictureId = ""
+            profilePictureId = currentUser.profilePicture.id
         )
 
         return ResponseEntity.status(HttpStatus.OK)

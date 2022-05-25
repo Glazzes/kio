@@ -1,45 +1,39 @@
 package com.kio.configuration.security
 
+import com.kio.repositories.UserRepository
+import com.kio.shared.exception.NotFoundException
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.core.convert.converter.Converter
+import org.springframework.security.authentication.AbstractAuthenticationToken
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.core.context.SecurityContextHolderStrategy
-import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.provisioning.InMemoryUserDetailsManager
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.cors.CorsConfiguration
 import javax.annotation.PostConstruct
 
-@Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-class WebSecurityConfiguration(
-    private val userDetailsService: SecurityUserDetailsService,
-): WebSecurityConfigurerAdapter() {
+@EnableWebSecurity
+class WebSecurityConfiguration(private val userRepository: UserRepository) {
 
     @PostConstruct
     fun setContextHolderStrategy() {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL)
     }
 
-    override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.userDetailsService(userDetailsService)
-            .passwordEncoder(this.passwordEncoder())
-    }
-
-    override fun configure(http: HttpSecurity) {
-        http.authorizeRequests {
-                it.anyRequest()
+    @Bean
+    fun defaultSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        return http.authorizeHttpRequests {
+            it.anyRequest()
                 .permitAll()
-            }
+        }
+            .csrf { it.disable() }
             .cors {
                 it.configurationSource {
                     val configuration = CorsConfiguration()
@@ -51,16 +45,32 @@ class WebSecurityConfiguration(
                 }
             }
             .httpBasic { it.realmName("Kio realm") }
+            .oauth2ResourceServer {
+                it.jwt { c -> c.jwkSetUri("http://localhost:8080/oauth2/jwks")
+                    .jwtAuthenticationConverter(this.jwtToUserConverter())
+                }
+            }
+            .formLogin(Customizer.withDefaults())
+            .build()
+    }
+
+    private fun jwtToUserConverter() = Converter<Jwt, AbstractAuthenticationToken> {
+        val authenticatedUser = userRepository.findByUsername(it.subject)
+            ?: throw NotFoundException("Could not found user with username ${it.subject}")
+
+        UsernamePasswordAuthenticationToken(authenticatedUser, null)
+    }
+
+    @Bean
+    fun userDetailsService() = UserDetailsService {
+        val authenticatedUser = userRepository.findByUsername(it) ?:
+            throw UsernameNotFoundException("Could not found user with username $it")
+
+        UserToUserDetailsAdapter(authenticatedUser)
     }
 
     @Bean
     fun passwordEncoder(): PasswordEncoder {
         return BCryptPasswordEncoder()
     }
-
-    @Bean
-    override fun authenticationManagerBean(): AuthenticationManager {
-        return super.authenticationManagerBean()
-    }
-
 }

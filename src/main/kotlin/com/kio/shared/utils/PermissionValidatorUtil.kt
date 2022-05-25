@@ -6,6 +6,7 @@ import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.Permission
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.UnIdentifiedResourceException
+import org.springframework.stereotype.Component
 
 object PermissionValidatorUtil {
 

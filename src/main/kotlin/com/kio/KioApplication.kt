@@ -3,7 +3,7 @@ package com.kio
 import com.kio.configuration.aws.AwsProperties
 import com.kio.configuration.population.S3PopulationConfig
 import com.kio.configuration.properties.BucketConfigurationProperties
-import com.kio.configuration.properties.OAuthConfigurationProperties
+import com.kio.configuration.properties.OAuth2ConfigurationProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableAsync
 @EnableMongoAuditing
 @EnableConfigurationProperties(
 	value = [
-		OAuthConfigurationProperties::class,
+		OAuth2ConfigurationProperties::class,
 		AwsProperties::class,
 		BucketConfigurationProperties::class,
 	])

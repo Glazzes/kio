@@ -3,13 +3,13 @@ kio:
   oauth:
     client:
       id: kio-oauth-client
-      secret: 3xnWzGJE94qMWTvpp5mGeqsmFukwXR
+      secret: $2a$04$V/I5pLmg5xw2XLorzdcQ5uj2znFPywSksOxcTYV8lMGBcbVII39Qu
       access-token-validity-time: 1200
       refresh-token-validity-time: 86400
 
 aws:
   s3:
-    endpoint: http://10.42.0.1:4566
+    endpoint: http://127.0.0.1:4566
     files-bucket: files.kio.com
     profile-pictures-bucket: pfp.kio.com
     region: us-east-1
@@ -35,3 +35,10 @@ spring:
       database: kio
       port: 27017
       host: localhost
+
+  security:
+    oauth2:
+      resourceserver:
+        opaquetoken:
+          client-id: kio-oauth-client
+          client-secret: $2a$04$V/I5pLmg5xw2XLorzdcQ5uj2znFPywSksOxcTYV8lMGBcbVII39Qu
