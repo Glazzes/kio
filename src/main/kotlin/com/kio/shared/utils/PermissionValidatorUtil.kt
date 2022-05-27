@@ -6,7 +6,6 @@ import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.Permission
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.UnIdentifiedResourceException
-import org.springframework.stereotype.Component
 
 object PermissionValidatorUtil {
 
@@ -24,12 +23,12 @@ object PermissionValidatorUtil {
         }
     }
 
-    fun isFoldersOwner(folder: Folder): Boolean {
+    fun isResourceOwner(folder: Folder): Boolean {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         return authenticatedUser.id!! == folder.metadata.ownerId
     }
 
-    fun checkFolderPermissions(folder: Folder, vararg requiredPermissions: Permission) {
+    fun verifyFolderPermissions(folder: Folder, vararg requiredPermissions: Permission) {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         if(authenticatedUser.id == folder.metadata.ownerId) return
         if(folder.visibility == FileVisibility.PUBLIC) return
@@ -44,6 +43,12 @@ object PermissionValidatorUtil {
         if(contributorPermissions.containsAll(requiredPermissions.asList())) {
             throw IllegalOperationException("You do not have the required permissions to alter this resource ${folder.id}")
         }
+    }
+
+    fun isContributor(folder: Folder): Boolean {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        if(folder.metadata.ownerId == authenticatedUser.id!!) return true
+        return folder.contributors.containsKey(authenticatedUser.id!!)
     }
 
 }

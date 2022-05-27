@@ -25,7 +25,7 @@ class UserService(
             username = signUpRequest.username,
             password = encodedPassword,
             email = signUpRequest.email,
-            profilePicture = ProfilePicture(bucketKey = defaultProfilePictureKey)
+            profilePicture = ProfilePicture(id="default", bucketKey = defaultProfilePictureKey)
         )
 
         val createdUser = userRepository.save(newUser)

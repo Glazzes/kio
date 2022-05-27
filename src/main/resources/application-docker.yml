@@ -1,20 +1,20 @@
 kio:
+  default-pfp-key: kio-default-pfp
   oauth:
     client:
       id: kio-oauth-client
       secret: 3xnWzGJE94qMWTvpp5mGeqsmFukwXR
       access-token-validity-time: 1200
       refresh-token-validity-time: 86400
-  store:
-    folder: /home/glaze/Escritorio/store/
 
 aws:
   s3:
     endpoint: http://s3:4566
-    bucket: kio-bucket
-    region: us-east-1
-    access-key: localstack
-    secret-key: localstack
+      files-bucket: files.kio.com
+      profile-pictures-bucket: pfp.kio.com
+      region: us-east-1
+      access-key: localstack
+      secret-key: localstack
 
 spring:
   servlet:

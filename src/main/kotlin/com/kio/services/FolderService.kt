@@ -24,6 +24,10 @@ import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
@@ -35,6 +39,8 @@ class FolderService(
     private val spaceService: SpaceService,
     private val s3: AmazonS3
 ){
+
+    private val defaultPageSize: Int = 20
 
     @Async
     fun saveRootFolderForNewUser(user: User) {
@@ -49,7 +55,7 @@ class FolderService(
 
     fun save(parentFolderId: String, request: FolderCreateRequest): FolderDTO {
         val parentFolder = this.findByInternal(parentFolderId)
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE)
 
         val subFolderNames = folderRepository.findFolderNamesByParentId(parentFolderId)
             .map { it.getName() }
@@ -77,7 +83,7 @@ class FolderService(
 
     fun edit(id: String, request: FolderEditRequest): FolderDTO {
         val folder = this.findByInternal(id)
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
 
         val folderNames = folderRepository.findFolderNamesByParentId(folder.id!!)
             .map { it.getName() }
@@ -102,7 +108,7 @@ class FolderService(
 
     fun findById(id: String): FolderDTO {
         val folder = this.findByInternal(id)
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_ONLY)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
 
         return FolderMapper.toFolderDTO(folder, this.findFolderContributors(folder))
     }
@@ -113,19 +119,31 @@ class FolderService(
             .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
     }
 
-    fun findSubFoldersByParentId(id: String): Set<FolderDTO> {
+    fun findSubFoldersByParentId(id: String, page: Int): Page<FolderDTO> {
         val folder = this.findByInternal(id)
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_ONLY)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
 
-        return folderRepository.findByIdIsIn(folder.subFolders)
-            .filter { PermissionValidatorUtil.isFoldersOwner(it) || it.visibility != FileVisibility.OWNER }
+        val pageRequest = PageRequest.of(
+            page,
+            defaultPageSize,
+            Sort.by(Sort.Direction.DESC, "metadata.lastModifiedDate")
+        )
+
+        return folderRepository.findByIdIsIn(folder.subFolders, pageRequest).apply {
+                content.removeIf { PermissionValidatorUtil.isResourceOwner(it) || it.visibility != FileVisibility.OWNER }
+            }
             .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
-            .toSet()
     }
 
-    fun findFilesByFolderId(id: String): Collection<FileDTO> {
+    fun findFilesByFolderId(id: String, page: Int): Page<FileDTO> {
         val folder = this.findByInternal(id)
-        return fileRepository.findByIdIsIn(folder.files)
+        val pageRequest = PageRequest.of(
+            page,
+            defaultPageSize,
+            Sort.by(Sort.Direction.DESC, "metadata.lastModifiedDate")
+        )
+
+        return fileRepository.findByIdIsIn(folder.files, pageRequest)
             .map { FileMapper.toFileDTO(it) }
     }
 
@@ -147,7 +165,7 @@ class FolderService(
             throw NotFoundException("At least one of the folders to delete does not belong to its parent")
         }
 
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.DELETE)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.DELETE)
         val subFolders = folderRepository.findByIdIsIn(subFoldersIds)
         for(sub in subFolders) {
             this.deleteSubFoldersAndFiles(sub.subFolders)

@@ -5,6 +5,7 @@ import com.kio.dto.request.folder.FolderEditRequest
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
 import com.kio.services.FolderService
+import org.springframework.data.domain.Page
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -39,15 +40,15 @@ class FolderController(private val folderService: FolderService) {
     }
 
     @GetMapping(path = ["/{id}/sub-folders"])
-    fun findSubFoldersById(@PathVariable id: String): ResponseEntity<Collection<FolderDTO>> {
+    fun findSubFoldersById(@PathVariable id: String, @RequestParam page: Int): ResponseEntity<Page<FolderDTO>> {
         return ResponseEntity.status(HttpStatus.OK)
-            .body(folderService.findSubFoldersByParentId(id))
+            .body(folderService.findSubFoldersByParentId(id, page))
     }
 
     @GetMapping(path = ["/{id}/files"])
-    fun findFilesByFolderId(@PathVariable id: String): ResponseEntity<Collection<FileDTO>> {
+    fun findFilesByFolderId(@PathVariable id: String, @RequestParam page: Int): ResponseEntity<Page<FileDTO>> {
         return ResponseEntity.status(HttpStatus.OK)
-            .body(folderService.findFilesByFolderId(id))
+            .body(folderService.findFilesByFolderId(id, page))
     }
 
     @GetMapping(path = ["/{id}/size"])

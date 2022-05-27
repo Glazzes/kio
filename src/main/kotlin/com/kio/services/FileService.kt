@@ -19,6 +19,8 @@ import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.util.*
@@ -37,7 +39,7 @@ class FileService(
         val folder = this.findFolderById(request.to)
         val filesSize = files.sumOf { it.size }
 
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
         spaceService.canUpload(folder, filesSize)
 
         val filesToSave: MutableList<File> = ArrayList()
@@ -82,7 +84,7 @@ class FileService(
     fun findById(fileId: String): FileDTO {
         val file = this.findByIdInternal(fileId)
         val parentFolder = this.findFolderById(file.parentFolder)
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_ONLY)
 
         return FileMapper.toFileDTO(file)
     }
@@ -91,7 +93,7 @@ class FileService(
         val file = this.findByIdInternal(id)
         val parentFolder = this.findFolderById(file.parentFolder)
 
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE)
 
         val parentFilenames = fileRepository.findFilesNamesByParentId(file.parentFolder)
             .map { it.getName() }
@@ -111,7 +113,7 @@ class FileService(
             throw IllegalOperationException("At least one of the files does not belong to this folder ${deleteRequest.from}")
         }
 
-        PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_WRITE, Permission.DELETE)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE, Permission.DELETE)
         val filesToDelete = fileRepository.findByIdIsIn(deleteRequest.files)
         val filesToDeleteSize = filesToDelete.sumOf { it.size }
 

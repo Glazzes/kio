@@ -12,7 +12,7 @@ import com.kio.shared.utils.FileUtils
 import org.springframework.stereotype.Service
 
 @Service
-class CopyCheckService(
+class CopyUtilService(
     private val folderRepository: FolderRepository
 ){
 

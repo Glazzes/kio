@@ -30,7 +30,7 @@ class CutService(
     private val folderRepository: FolderRepository,
     private val fileRepository: FileRepository,
     private val userRepository: UserRepository,
-    private val copyCheckService: CopyCheckService,
+    private val copyUtilService: CopyUtilService,
     private val s3: AmazonS3
 ){
 
@@ -39,8 +39,8 @@ class CutService(
         val destination = this.findFolderById(request.destination)
 
         PermissionValidatorUtil.isResourceOwner(source)
-        PermissionValidatorUtil.checkFolderPermissions(destination, Permission.READ_WRITE)
-        copyCheckService.canCutFolder(source, destination)
+        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
+        copyUtilService.canCutFolder(source, destination)
 
         if(source.id == destination.id) {
             throw IllegalOperationException("You can not cut a folder and save them into the same folder they come from")
@@ -126,7 +126,7 @@ class CutService(
         val destination = this.findFolderById(request.destinationId)
 
         PermissionValidatorUtil.isResourceOwner(source)
-        PermissionValidatorUtil.checkFolderPermissions(destination, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
 
         if(source.id == destination.id) {
             throw IllegalOperationException("You can not cut files and save them into the same folder they come from")

@@ -24,7 +24,7 @@ class CopyService(
     private val fileRepository: FileRepository,
     private val folderRepository: FolderRepository,
     private val bucketConfigurationProperties: BucketConfigurationProperties,
-    private val copyCheckService: CopyCheckService,
+    private val copyUtilService: CopyUtilService,
     private val s3: AmazonS3
 ){
 
@@ -32,8 +32,8 @@ class CopyService(
         val source = this.findFolderById(copyRequest.sourceId)
         val destination = this.findFolderById(copyRequest.destinationId)
 
-        PermissionValidatorUtil.checkFolderPermissions(source, Permission.READ_WRITE)
-        PermissionValidatorUtil.checkFolderPermissions(destination, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(source, Permission.READ_WRITE)
+        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
 
         val sourceFiles = fileRepository.findByIdIsIn(source.files)
         val destinationFiles = fileRepository.findByIdIsIn(destination.files)
@@ -57,7 +57,7 @@ class CopyService(
             val newName = FileUtils.getValidName(file.name, destinationFilenames)
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
 
-            val newFile = copyCheckService.cloneFile(file, destination, newName, bucketKey)
+            val newFile = copyUtilService.cloneFile(file, destination, newName, bucketKey)
             newFiles.add(newFile)
 
             val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)
@@ -85,7 +85,7 @@ class CopyService(
         val newFiles = mutableSetOf<File>()
         for(file in sourceFiles) {
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
-            val newFile = copyCheckService.cloneFile(file, destination, file.name, bucketKey)
+            val newFile = copyUtilService.cloneFile(file, destination, file.name, bucketKey)
             newFiles.add(newFile)
 
             val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)

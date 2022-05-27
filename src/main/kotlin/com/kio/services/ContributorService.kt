@@ -14,6 +14,7 @@ import com.kio.shared.exception.AlreadyExistsException
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.PermissionValidatorUtil
+import com.kio.shared.utils.SecurityUtil
 import org.springframework.stereotype.Service
 
 @Service
@@ -67,6 +68,19 @@ class ContributorService(
         folderRepository.save(folder.apply {
             contributors[request.contributorId] = request.permissions.toMutableSet()
         })
+    }
+
+    fun deleteVoluntarely(folderId: String) {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val folder = this.findFolderById(folderId)
+        val isContributor = PermissionValidatorUtil.isContributor(folder)
+
+        if(isContributor) {
+            folder.contributors.remove(authenticatedUser.id!!)
+            folderRepository.save(folder)
+        }
+
+        throw NotFoundException("You're not a contributor of this folder ${folder.id}")
     }
 
     fun delete(request: ContributorDeleteRequest) {

@@ -32,7 +32,7 @@ class StaticService(
             .orElseThrow { NotFoundException("Folder with id ${file.parentFolder} does not exists") }
 
         if(file.visibility != FileVisibility.PUBLIC) {
-            PermissionValidatorUtil.checkFolderPermissions(parentFolder, Permission.READ_ONLY)
+            PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_ONLY)
         }
 
         val content = s3.getObject(buckets.filesBucket, file.bucketKey)
@@ -45,7 +45,7 @@ class StaticService(
         val folder = folderRepository.findById(id)
             .orElseThrow { NotFoundException("Could not found folder with id $id") }
 
-        PermissionValidatorUtil.checkFolderPermissions(folder, Permission.READ_ONLY)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
 
         response.setHeader("Content-Disposition", "attachment;filename=${folder.name}.zip")
 

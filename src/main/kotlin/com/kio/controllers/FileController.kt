@@ -4,8 +4,6 @@ import com.kio.dto.request.file.FileDeleteRequest
 import com.kio.dto.request.file.FileEditRequest
 import com.kio.dto.request.file.FileUploadRequest
 import com.kio.dto.response.FileDTO
-import com.kio.dto.response.modify.RenamedEntityDTO
-import com.kio.entities.details.FileDetails
 import com.kio.services.FileService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

@@ -47,4 +47,11 @@ class ContributorController(private val contributorService: ContributorService) 
             .build()
     }
 
+    @DeleteMapping(path = ["/folder/{id}"])
+    fun deleteByUserSelf(@PathVariable id: String): ResponseEntity<Unit> {
+        contributorService.deleteVoluntarely(id)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            .build()
+    }
+
 }
