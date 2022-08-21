@@ -14,6 +14,7 @@ class File(
     val details: FileDetails,
     val contentType: String,
     val size: Long,
+    var isFavorite: Boolean = false,
     val bucketKey: String,
     var parentFolder: String,
     var visibility: FileVisibility,

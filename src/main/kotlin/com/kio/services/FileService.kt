@@ -19,6 +19,7 @@ import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
+import com.kio.shared.utils.SecurityUtil
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -87,6 +88,24 @@ class FileService(
         PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_ONLY)
 
         return FileMapper.toFileDTO(file)
+    }
+
+    fun findFavorites(): Collection<FileDTO> {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val pageRequest = PageRequest.of(0, 20, Sort.Direction.DESC, "metadata.lastModifiedDate")
+
+        return fileRepository.findByMetadataOwnerIdAndIsFavorite(authenticatedUser.id!!, true, pageRequest)
+            .map { FileMapper.toFileDTO(it) }
+            .toSet()
+    }
+
+    fun fave(fileIds: Collection<String>) {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val files = fileRepository.findByIdIsIn(fileIds)
+            .filter { it.metadata.ownerId == authenticatedUser.id!! }
+            .map { it.apply { this.isFavorite = true } }
+
+        fileRepository.saveAll(files)
     }
 
     fun edit(id: String, request: FileEditRequest): FileDTO {

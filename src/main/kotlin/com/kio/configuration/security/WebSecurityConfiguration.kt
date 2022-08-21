@@ -30,8 +30,7 @@ class WebSecurityConfiguration(private val userRepository: UserRepository) {
     @Bean
     fun defaultSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         return http.authorizeHttpRequests {
-            it.anyRequest()
-                .permitAll()
+            it.anyRequest().permitAll()
         }
             .csrf { it.disable() }
             .cors {

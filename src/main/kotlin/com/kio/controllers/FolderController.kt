@@ -57,6 +57,20 @@ class FolderController(private val folderService: FolderService) {
             .body(folderService.findFolderSizeById(id))
     }
 
+    @GetMapping(path = ["/favorites"])
+    fun findFavorites(): ResponseEntity<Collection<FolderDTO>> {
+        val favorites = folderService.findFavorites()
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(favorites)
+    }
+
+    @PatchMapping(path = ["/fave"])
+    fun fave(@RequestBody folders: Collection<String>): ResponseEntity<Unit> {
+        folderService.fave(folders)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            .build()
+    }
+
     @PatchMapping(path = ["/{id}/edit"])
     fun edit(@PathVariable id: String, @RequestBody request: FolderEditRequest): ResponseEntity<FolderDTO> {
         val dto = folderService.edit(id, request)

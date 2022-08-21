@@ -21,11 +21,13 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.security:spring-security-oauth2-authorization-server:0.3.0")
 	implementation("com.amazonaws:aws-java-sdk-s3:1.12.146")
+	implementation("org.apache.pdfbox:pdfbox:2.0.26")
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
-	// Had to add it try adding jaxb dependencies, did not work
+	// Had to add it because of jaxb dependencies, adding them individually did not work
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

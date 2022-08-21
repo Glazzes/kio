@@ -9,9 +9,8 @@ import org.springframework.data.mongodb.repository.Query
 
 interface FileRepository : MongoRepository<File, String> {
 
-
+    fun findByMetadataOwnerIdAndIsFavorite(ownerId: String, isFavorite: Boolean, pageRequest: PageRequest): Page<File>
     fun findByIdIsIn(ids: Collection<String>): Collection<File>
-
     fun findByIdIsIn(ids: Collection<String>, pageRequest: PageRequest): Page<File>
 
     @Query(value = "{parentFolder: ?0}")

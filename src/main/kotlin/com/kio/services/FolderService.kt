@@ -24,7 +24,6 @@ import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -79,6 +78,23 @@ class FolderService(
         })
 
         return FolderMapper.toFolderDTO(newFolder, emptyList())
+    }
+
+    fun findFavorites(): Collection<FolderDTO> {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val pageRequest = PageRequest.of(0, 20, Sort.Direction.DESC, "metadata.lastModifiedDate")
+
+        return folderRepository.findByMetadataOwnerIdAndIsFavorite(authenticatedUser.id!!, true, pageRequest)
+            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+            .toSet()
+    }
+
+    fun fave(folderIds: Collection<String>) {
+        val folders = folderRepository.findByIdIsIn(folderIds)
+            .filter { PermissionValidatorUtil.isResourceOwner(it) }
+            .map { it.apply { this.isFavorite = true } }
+
+        folderRepository.saveAll(folders)
     }
 
     fun edit(id: String, request: FolderEditRequest): FolderDTO {

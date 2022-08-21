@@ -29,6 +29,20 @@ class FileController (val fileService: FileService){
             .body(fileService.findById(fileId))
     }
 
+    @GetMapping(path = ["/favorites"])
+    fun findFavorites(): ResponseEntity<Collection<FileDTO>> {
+        val favorites = fileService.findFavorites()
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(favorites)
+    }
+
+    @PatchMapping(path = ["/fave"])
+    fun fave(@RequestBody files: Collection<String>): ResponseEntity<Unit> {
+        fileService.fave(files)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            .build()
+    }
+
     @PatchMapping(path = ["/{id}/edit"])
     fun edit(@PathVariable id: String, @RequestBody request: FileEditRequest): ResponseEntity<FileDTO> {
         val dto = fileService.edit(id, request)
