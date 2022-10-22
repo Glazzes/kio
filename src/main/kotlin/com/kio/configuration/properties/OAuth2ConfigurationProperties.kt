@@ -8,6 +8,6 @@ import org.springframework.boot.context.properties.ConstructorBinding
 data class OAuth2ConfigurationProperties(
     val id: String,
     val secret: String,
-    val refreshTokenValidityTime: Int,
-    val accessTokenValidityTime: Int,
+    val refreshTokenValidityTime: Long,
+    val accessTokenValidityTime: Long,
 )

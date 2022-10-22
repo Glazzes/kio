@@ -19,7 +19,8 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.security:spring-security-oauth2-authorization-server:0.3.0")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+	implementation("org.springframework.security:spring-security-oauth2-jose:5.7.4")
 	implementation("com.amazonaws:aws-java-sdk-s3:1.12.146")
 	implementation("org.apache.pdfbox:pdfbox:2.0.26")
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")

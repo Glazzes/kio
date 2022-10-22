@@ -2,10 +2,10 @@ kio:
   default-pfp-key: kio-default-pfp
   oauth:
     client:
-      id: kio-oauth-client
-      secret: $2a$04$V/I5pLmg5xw2XLorzdcQ5uj2znFPywSksOxcTYV8lMGBcbVII39Qu
-      access-token-validity-time: 1200
-      refresh-token-validity-time: 86400
+      id: kio
+      secret: $2y$04$n8QZyDIWYdG8AF6EFCaa8Or4rib./RoMeSUo6kbxxBNKQETK/Uwve # secret in plain text
+      access-token-validity-time: 15 # minutes
+      refresh-token-validity-time: 7 # days
 
 aws:
   s3:
@@ -16,29 +16,15 @@ aws:
     access-key: localstack
     secret-key: localstack
 
-#security:
-#  oauth2:
-#    resource:
-#      jwt-key-uri: http://localhost:8080/oauth/token-key
-#    client:
-#      client-id: rs
-#      client-secret: rssecret
-
 spring:
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 200MB
       enabled: true
+
   data:
     mongodb:
       database: kio
       port: 27017
       host: localhost
-
-  security:
-    oauth2:
-      resourceserver:
-        opaquetoken:
-          client-id: kio-oauth-client
-          client-secret: $2a$04$V/I5pLmg5xw2XLorzdcQ5uj2znFPywSksOxcTYV8lMGBcbVII39Qu

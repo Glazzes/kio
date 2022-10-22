@@ -11,10 +11,12 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.data.mongodb.config.EnableMongoAuditing
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories
 import org.springframework.scheduling.annotation.EnableAsync
 
 @EnableAsync
 @EnableMongoAuditing
+@EnableMongoRepositories
 @EnableConfigurationProperties(
 	value = [
 		OAuth2ConfigurationProperties::class,

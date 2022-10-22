@@ -34,6 +34,12 @@ class UserController(
             .body(userService.save(request))
     }
 
+    @GetMapping
+    fun findByUsernameOrEmail(@RequestParam(name = "q") query: String): ResponseEntity<UserDTO> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(userService.findByUsernameOrEmail(query))
+    }
+
     @GetMapping(path = ["/me"])
     fun me(principal: Principal): ResponseEntity<UserDTO> {
         val currentUser = SecurityUtil.getAuthenticatedUser()

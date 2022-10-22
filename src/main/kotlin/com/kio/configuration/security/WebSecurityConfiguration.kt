@@ -1,26 +1,34 @@
 package com.kio.configuration.security
 
-import com.kio.repositories.UserRepository
-import com.kio.shared.exception.NotFoundException
+import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jose.jwk.RSAKey
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet
+import com.nimbusds.jose.jwk.source.JWKSource
+import com.nimbusds.jose.proc.SecurityContext
 import org.springframework.context.annotation.Bean
-import org.springframework.core.convert.converter.Converter
-import org.springframework.security.authentication.AbstractAuthenticationToken
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.config.Customizer
+import org.springframework.context.annotation.Primary
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.ProviderManager
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetailsService
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.jwt.JwtDecoder
+import org.springframework.security.oauth2.jwt.JwtEncoder
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.web.cors.CorsConfiguration
 import javax.annotation.PostConstruct
 
 @EnableWebSecurity
-class WebSecurityConfiguration(private val userRepository: UserRepository) {
+class WebSecurityConfiguration(
+    private val userDetailsService: UserDetailsService,
+    private val jwtToUserConverter: JwtToUserConverter
+) {
 
     @PostConstruct
     fun setContextHolderStrategy() {
@@ -28,44 +36,53 @@ class WebSecurityConfiguration(private val userRepository: UserRepository) {
     }
 
     @Bean
-    fun defaultSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        return http.authorizeHttpRequests {
-            it.anyRequest().permitAll()
-        }
-            .csrf { it.disable() }
-            .cors {
-                it.configurationSource {
-                    val configuration = CorsConfiguration()
-                    configuration.allowCredentials = true
-                    configuration.allowedOrigins = listOf("http://localhost:19006")
-                    configuration.allowedMethods = listOf("GET", "POST", "PATCH", "DELETE", "OPTIONS")
-                    configuration.maxAge = 3600
-                    configuration
-                }
-            }
-            .httpBasic { it.realmName("Kio realm") }
-            .oauth2ResourceServer {
-                it.jwt { c -> c.jwkSetUri("http://localhost:8080/oauth2/jwks")
-                    .jwtAuthenticationConverter(this.jwtToUserConverter())
-                }
-            }
-            .formLogin(Customizer.withDefaults())
-            .build()
-    }
+    fun authenticationManager(): AuthenticationManager {
+        val daoProvider = DaoAuthenticationProvider()
+        daoProvider.setPasswordEncoder(this.passwordEncoder())
+        daoProvider.setUserDetailsService(userDetailsService)
 
-    private fun jwtToUserConverter() = Converter<Jwt, AbstractAuthenticationToken> {
-        val authenticatedUser = userRepository.findByUsername(it.subject)
-            ?: throw NotFoundException("Could not found user with username ${it.subject}")
-
-        UsernamePasswordAuthenticationToken(authenticatedUser, null)
+        return ProviderManager(daoProvider)
     }
 
     @Bean
-    fun userDetailsService() = UserDetailsService {
-        val authenticatedUser = userRepository.findByUsername(it) ?:
-            throw UsernameNotFoundException("Could not found user with username $it")
+    fun defaultSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        return http.csrf { it.disable() }
+            .httpBasic { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests {
+                it.antMatchers("/api/v1/auth/**").permitAll()
+                    .anyRequest().authenticated()
+            }
+            .oauth2ResourceServer {
+                it.jwt { jwt ->
+                    jwt.jwtAuthenticationConverter(jwtToUserConverter)
+                }
+            }
+            .addFilter(CustomAuthenticationFilter(this.authenticationManager()))
+            .build()
+    }
 
-        UserToUserDetailsAdapter(authenticatedUser)
+    @Bean
+    fun jwkSource(): JWKSource<SecurityContext?> {
+        val rsaKey: RSAKey = KeyUtils.getRsaKey()
+        val jwkSet = JWKSet(rsaKey)
+        return ImmutableJWKSet<SecurityContext>(jwkSet)
+    }
+
+    @Bean
+    @Primary
+    fun customJwtDecoder(): JwtDecoder {
+        val rsaKey = KeyUtils.getRsaKey()
+        return NimbusJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey())
+            .build()
+    }
+
+    @Bean
+    @Primary
+    fun customJwtEncoder(): JwtEncoder {
+        val rsaKey = KeyUtils.getRsaKey()
+        val jwkSource = ImmutableJWKSet<SecurityContext>(JWKSet(rsaKey))
+        return NimbusJwtEncoder(jwkSource)
     }
 
     @Bean

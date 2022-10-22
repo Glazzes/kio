@@ -6,6 +6,7 @@ import com.kio.entities.ProfilePicture
 import com.kio.entities.User
 import com.kio.mappers.UserMapper
 import com.kio.repositories.UserRepository
+import com.kio.shared.exception.NotFoundException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -35,6 +36,13 @@ class UserService(
 
     fun existsByEmail(email: String): Boolean {
         return userRepository.existsByEmail(email)
+    }
+
+    fun findByUsernameOrEmail(query: String): UserDTO {
+        val user = userRepository.findByUsernameOrEmail(query) ?:
+            throw NotFoundException("Could not find user by query $query")
+
+        return UserMapper.toUserDTO(user)
     }
 
 }
