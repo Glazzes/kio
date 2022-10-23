@@ -1,59 +1,72 @@
 package com.kio.services
 
-import com.kio.shared.enums.JwtType
 import com.kio.dto.request.auth.LoginDTO
 import com.kio.dto.request.auth.TokenResponseDTO
+import com.kio.shared.exception.InvalidTokenException
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.oauth2.jwt.JwtClaimsSet
-import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtEncoder
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.naming.AuthenticationException
 
 @Service
 class AuthenticationService (
     private val jwtEncoder: JwtEncoder,
-    private val jwtDecoder: JwtDecoder,
+    private val authenticationManager: AuthenticationManager,
+    @Qualifier("refreshTokenTemplate") private val redisTemplate: RedisTemplate<String, String>
 ) {
 
-    private val isRefreshToken = "isRefreshToken"
-
     fun login(loginDTO: LoginDTO): TokenResponseDTO {
-        val accessToken = this.issueToken(loginDTO.username, JwtType.ACCESS_TOKEN)
-        val refreshToken = this.issueToken(loginDTO.username, JwtType.REFRESH_TOKEN)
+        try{
+            val authentication = UsernamePasswordAuthenticationToken(loginDTO.username, loginDTO.password)
+            authenticationManager.authenticate(authentication)
+        }catch (e: AuthenticationException) {
+            throw BadCredentialsException(e.message)
+        }
+
+        val accessToken = this.issueTokenAccessToken(loginDTO.username)
+        val refreshToken = "${UUID.randomUUID()}-${UUID.randomUUID()}"
+
+        redisTemplate.opsForValue()
+            .set(refreshToken, loginDTO.username, Duration.ofDays(7L))
 
         return TokenResponseDTO(accessToken, refreshToken)
     }
 
     fun getTokenPair(refreshToken: String): TokenResponseDTO {
-        val jwt = jwtDecoder.decode(refreshToken)
-        val now = Instant.now()
-        val expiration = jwt.expiresAt!!
+        val subject = redisTemplate.opsForValue()
+            .get(refreshToken) ?: throw InvalidTokenException("The provided refresh token has been revoked or expired")
 
-        if(!jwt.getClaimAsBoolean(isRefreshToken) && expiration.isBefore(now)) {
-            throw RuntimeException("Random message :(")
-        }
+        val accessToken = this.issueTokenAccessToken(subject)
+        val newRefreshToken = "${UUID.randomUUID()}-${UUID.randomUUID()}"
 
-        val newRefreshToken = this.issueToken(jwt.subject, JwtType.ACCESS_TOKEN)
-        val accessToken = this.issueToken(jwt.subject, JwtType.REFRESH_TOKEN)
+        redisTemplate.opsForValue()
+            .getAndDelete(refreshToken)
+
+        redisTemplate.opsForValue()
+            .set(newRefreshToken, subject, Duration.ofDays(7L))
+
         return TokenResponseDTO(accessToken, newRefreshToken)
     }
 
-    private fun issueToken(subject: String, type: JwtType) : String {
+    private fun issueTokenAccessToken(subject: String) : String {
         val now = Instant.now()
-        val duration = if(type == JwtType.ACCESS_TOKEN) 20L else 7L
-        val timeUnit = if(type == JwtType.ACCESS_TOKEN) ChronoUnit.MINUTES else ChronoUnit.DAYS
 
         val claimsSet = JwtClaimsSet.builder()
             .issuer("kio")
             .subject(subject)
-            .expiresAt(now.plus(duration, timeUnit))
+            .expiresAt(now.plus(20L, ChronoUnit.MINUTES))
+            .audience(listOf("kio-mobile-app"))
             .issuedAt(now)
-
-        if(type == JwtType.REFRESH_TOKEN) {
-            claimsSet.claim(isRefreshToken, true)
-        }
 
         val claims = claimsSet.build()
         val params = JwtEncoderParameters.from(claims)

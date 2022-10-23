@@ -8,16 +8,16 @@ import com.kio.mappers.UserMapper
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.NotFoundException
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class UserService(
     val userRepository: UserRepository,
-    val folderService: FolderService,
     val passwordEncoder: PasswordEncoder,
 ){
-    @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
 
     fun save(signUpRequest: SignUpRequest): UserDTO {
         val encodedPassword = passwordEncoder.encode(signUpRequest.password)
@@ -26,12 +26,10 @@ class UserService(
             username = signUpRequest.username,
             password = encodedPassword,
             email = signUpRequest.email,
-            profilePicture = ProfilePicture(id="default", bucketKey = defaultProfilePictureKey)
         )
 
         val createdUser = userRepository.save(newUser)
-        folderService.saveRootFolderForNewUser(createdUser)
-        return UserMapper.toUserDTO(newUser)
+        return UserMapper.toUserDTO(createdUser)
     }
 
     fun existsByEmail(email: String): Boolean {
@@ -39,7 +37,7 @@ class UserService(
     }
 
     fun findByUsernameOrEmail(query: String): UserDTO {
-        val user = userRepository.findByUsernameOrEmail(query) ?:
+        val user = userRepository.findByUsernameOrEmail(query, query) ?:
             throw NotFoundException("Could not find user by query $query")
 
         return UserMapper.toUserDTO(user)

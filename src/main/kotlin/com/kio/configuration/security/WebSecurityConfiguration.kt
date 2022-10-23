@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.source.JWKSource
 import com.nimbusds.jose.proc.SecurityContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
@@ -51,6 +52,7 @@ class WebSecurityConfiguration(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
                 it.antMatchers("/api/v1/auth/**").permitAll()
+                    .antMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {
@@ -58,7 +60,6 @@ class WebSecurityConfiguration(
                     jwt.jwtAuthenticationConverter(jwtToUserConverter)
                 }
             }
-            .addFilter(CustomAuthenticationFilter(this.authenticationManager()))
             .build()
     }
 

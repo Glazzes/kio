@@ -41,17 +41,6 @@ class FolderService(
 
     private val defaultPageSize: Int = 20
 
-    @Async
-    fun saveRootFolderForNewUser(user: User) {
-        val rootFolder = Folder(
-            name = "My unit",
-            folderType = FolderType.ROOT,
-            metadata = FileMetadata(ownerId = user.id!!, lastModifiedBy = user.id!!),
-            visibility = FileVisibility.OWNER)
-
-        folderRepository.save(rootFolder)
-    }
-
     fun save(parentFolderId: String, request: FolderCreateRequest): FolderDTO {
         val parentFolder = this.findByInternal(parentFolderId)
         PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE)
@@ -116,10 +105,26 @@ class FolderService(
 
     fun findAuthenticatedUserUnit(): FolderDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT) ?:
-            throw IllegalStateException("This user does not have an unit, how?!!!")
+        val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT)
+
+        if(userUnit == null) {
+            val rootFolder = this.createRootFolder()
+            return FolderMapper.toFolderDTO(rootFolder, emptySet())
+        }
 
         return FolderMapper.toFolderDTO(userUnit, emptySet())
+    }
+
+    private fun createRootFolder(): Folder {
+        val user = SecurityUtil.getAuthenticatedUser()
+
+        val rootFolder = Folder(
+            name = "My unit",
+            folderType = FolderType.ROOT,
+            metadata = FileMetadata(ownerId = user.id!!, lastModifiedBy = user.id!!),
+            visibility = FileVisibility.OWNER)
+
+        return folderRepository.save(rootFolder)
     }
 
     fun findById(id: String): FolderDTO {
@@ -145,10 +150,10 @@ class FolderService(
             Sort.by(Sort.Direction.DESC, "metadata.lastModifiedDate")
         )
 
-        return folderRepository.findByIdIsIn(folder.subFolders, pageRequest).apply {
-                content.removeIf { PermissionValidatorUtil.isResourceOwner(it) || it.visibility != FileVisibility.OWNER }
-            }
-            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+        val page = folderRepository.findByIdIsIn(folder.subFolders, pageRequest)
+        page.removeAll { !PermissionValidatorUtil.verifyFolderPermissionsAsBoolean(it, Permission.READ_ONLY) }
+
+        return page.map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
     }
 
     fun findFilesByFolderId(id: String, page: Int): Page<FileDTO> {

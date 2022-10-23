@@ -13,5 +13,5 @@ interface UserRepository : MongoRepository<User, String> {
 
     fun findByIdIn(ids: Collection<String>): Collection<ContributorProjection>
 
-    fun findByUsernameOrEmail(query: String): User?
+    fun findByUsernameOrEmail(username: String, email: String): User?
 }

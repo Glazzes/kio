@@ -4,9 +4,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.response.StaticResponseDTO
-import com.kio.entities.ProfilePicture
 import com.kio.entities.User
-import com.kio.repositories.ProfilePictureRepository
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.SecurityUtil
@@ -20,7 +18,6 @@ class ProfilePictureService (
     private val s3: AmazonS3,
     private val bucketProperties: BucketConfigurationProperties,
     private val userRepository: UserRepository,
-    private val profilePictureRepository: ProfilePictureRepository,
 ){
 
     @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
@@ -35,15 +32,14 @@ class ProfilePictureService (
         }
 
         s3.putObject(bucketProperties.profilePicturesBucket, bucketKey, file.inputStream, metadata)
-        val profilePicture = ProfilePicture(bucketKey = bucketKey)
 
-        if(authenticatedUser.profilePicture.bucketKey == defaultProfilePictureKey) {
-            userRepository.save(authenticatedUser.apply { this.profilePicture = profilePicture })
+        if(authenticatedUser.profilePictureBucketKey == null) {
+            userRepository.save(authenticatedUser.apply { this.profilePictureBucketKey = bucketKey })
             return
         }
 
-        profilePictureRepository.save(authenticatedUser.profilePicture.apply { this.isActive = false })
-        userRepository.save(authenticatedUser.apply { this.profilePicture = profilePicture })
+        s3.deleteObject(bucketProperties.profilePicturesBucket, authenticatedUser.profilePictureBucketKey)
+        userRepository.save(authenticatedUser.apply { this.profilePictureBucketKey = bucketKey })
     }
 
     fun findDefault(): StaticResponseDTO {
@@ -53,10 +49,11 @@ class ProfilePictureService (
 
     fun findMine(): StaticResponseDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, authenticatedUser.profilePicture.bucketKey)
+        val s3Picture = s3.getObject(bucketProperties.filesBucket, authenticatedUser.profilePictureBucketKey)
         return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
     }
 
+    /*
     fun findById(id: String): StaticResponseDTO {
         val profilePicture = profilePictureRepository.findById(id)
             .orElseThrow { NotFoundException("Not profile picture was found with id $id") }
@@ -64,10 +61,11 @@ class ProfilePictureService (
         val s3Picture = s3.getObject(bucketProperties.filesBucket, profilePicture.bucketKey)
         return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
     }
+     */
 
     fun findByUserId(id: String): StaticResponseDTO {
         val user = this.findUser(id)
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, user.profilePicture.bucketKey)
+        val s3Picture = s3.getObject(bucketProperties.filesBucket, user.profilePictureBucketKey)
         return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
     }
 

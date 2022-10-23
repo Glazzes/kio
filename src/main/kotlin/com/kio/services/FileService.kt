@@ -11,13 +11,16 @@ import com.kio.dto.response.FileDTO
 import com.kio.entities.File
 import com.kio.entities.details.FileMetadata
 import com.kio.entities.Folder
+import com.kio.entities.details.FileDetails
 import com.kio.entities.enums.Permission
 import com.kio.mappers.FileMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.IllegalOperationException
+import com.kio.shared.exception.InsufficientStorageException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
+import com.kio.shared.utils.MetadataUtil
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.data.domain.PageRequest
@@ -41,13 +44,16 @@ class FileService(
         val filesSize = files.sumOf { it.size }
 
         PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
-        spaceService.canUpload(folder, filesSize)
+        val canUpload = spaceService.canUpload(folder, filesSize)
+        if(!canUpload) {
+            throw InsufficientStorageException("The owner of this folder has ran out of storage space")
+        }
 
         val filesToSave: MutableList<File> = ArrayList()
         val parentFolderNames = fileRepository.getFolderFilesNames(folder.files)
 
         for(file in files) {
-            val key = "${folder.id}/${UUID.randomUUID()}"
+            val key = "${folder.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
 
             val s3Metadata = ObjectMetadata()
             s3Metadata.contentType = file.contentType
@@ -57,9 +63,11 @@ class FileService(
 
             val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
 
+            val audioSamples = MetadataUtil.getAudioSamples(file)
+
             val fileToSave = File(
                 name = validName,
-                details = request.details[file.originalFilename]!!,
+                details = FileDetails(audioSamples = audioSamples),
                 contentType = file.contentType ?: "UNKNOWN",
                 size = file.size,
                 bucketKey = key,

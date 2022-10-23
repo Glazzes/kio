@@ -10,13 +10,13 @@ object UserMapper {
         id = user.id!!,
         username = user.username,
         email = user.email,
-        profilePictureId = user.profilePicture.id!!
+        profilePictureId = user.profilePictureBucketKey
     )
 
     fun toContributorDTO(user: User) = ContributorDTO(
         id = user.id!!,
         username = user.username,
-        profilePictureId = user.profilePicture.id!!
+        profilePictureId = user.profilePictureBucketKey
     )
 
 }

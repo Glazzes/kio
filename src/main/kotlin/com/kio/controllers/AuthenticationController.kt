@@ -18,13 +18,13 @@ class AuthenticationController (private val authenticationService: Authenticatio
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid loginDTO: LoginDTO): ResponseEntity<TokenResponseDTO> {
-        val tokenResponse = authenticationService.login(LoginDTO("glaze", "password"))
+        val tokenResponse = authenticationService.login(loginDTO)
         return ResponseEntity.status(HttpStatus.OK)
             .body(tokenResponse)
     }
 
     @PostMapping("/token")
-    fun getTokens(@RequestParam(name = "refresh_token") refreshToken: String): ResponseEntity<TokenResponseDTO> {
+    fun refreshTokenPair(@RequestParam(name = "refresh_token") refreshToken: String): ResponseEntity<TokenResponseDTO> {
         val tokenResponse = authenticationService.getTokenPair(refreshToken)
         return ResponseEntity.status(HttpStatus.OK)
             .body(tokenResponse)

@@ -30,8 +30,10 @@ object PermissionValidatorUtil {
 
     fun verifyFolderPermissions(folder: Folder, vararg requiredPermissions: Permission) {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+
         if(authenticatedUser.id == folder.metadata.ownerId) return
         if(folder.visibility == FileVisibility.PUBLIC) return
+        if(folder.contributors.containsKey(authenticatedUser.id)) return
 
         if(folder.visibility == FileVisibility.OWNER) {
             throw IllegalAccessException("Only the owner of this resource can see its contents.")
@@ -42,6 +44,15 @@ object PermissionValidatorUtil {
 
         if(contributorPermissions.containsAll(requiredPermissions.asList())) {
             throw IllegalOperationException("You do not have the required permissions to alter this resource ${folder.id}")
+        }
+    }
+
+    fun verifyFolderPermissionsAsBoolean(folder: Folder, vararg requiredPermissions: Permission): Boolean {
+        return try{
+            this.verifyFolderPermissions(folder, *requiredPermissions)
+            true
+        }catch (e: Exception) {
+            false
         }
     }
 

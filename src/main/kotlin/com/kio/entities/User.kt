@@ -10,6 +10,6 @@ class User (
     var username: String,
     var password: String,
     var email: String,
-    var profilePicture: ProfilePicture,
+    var profilePictureBucketKey: String? = null,
     var plan: Plan = Plan.BASIC
 )

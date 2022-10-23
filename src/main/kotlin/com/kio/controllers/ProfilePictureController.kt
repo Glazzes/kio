@@ -43,14 +43,6 @@ class ProfilePictureController(
             .body(InputStreamResource(static.inputStream))
     }
 
-    @GetMapping(path = ["/{id}"])
-    fun findById(@PathVariable id: String): ResponseEntity<InputStreamResource> {
-        val static = profilePictureService.findById(id)
-        return ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
-    }
-
     @GetMapping(path = ["/user/{id}"])
     fun findByUserId(@PathVariable id: String): ResponseEntity<InputStreamResource> {
         val static = profilePictureService.findByUserId(id)

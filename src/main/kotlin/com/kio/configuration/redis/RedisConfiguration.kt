@@ -16,6 +16,13 @@ class RedisConfiguration {
         return redisTemplate
     }
 
+    @Bean(name = ["refreshTokenTemplate"])
+    fun refreshTokenTemplate(): RedisTemplate<String, String> {
+        val redisTemplate = RedisTemplate<String, String>()
+        redisTemplate.setConnectionFactory(redisConnectionFactory())
+        return redisTemplate
+    }
+
     @Bean
     fun redisConnectionFactory(): LettuceConnectionFactory {
         return LettuceConnectionFactory("localhost", 6379)
