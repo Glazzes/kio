@@ -2,7 +2,9 @@ package com.kio.services
 
 import com.kio.dto.request.auth.LoginDTO
 import com.kio.dto.request.auth.TokenResponseDTO
+import com.kio.entities.RefreshToken
 import com.kio.shared.exception.InvalidTokenException
+import com.kio.shared.exception.NotFoundException
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.security.authentication.AuthenticationManager
@@ -14,6 +16,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.naming.AuthenticationException
@@ -22,7 +25,7 @@ import javax.naming.AuthenticationException
 class AuthenticationService (
     private val jwtEncoder: JwtEncoder,
     private val authenticationManager: AuthenticationManager,
-    @Qualifier("refreshTokenTemplate") private val redisTemplate: RedisTemplate<String, String>
+    @Qualifier("refreshTokenTemplate") private val redisTemplate: RedisTemplate<String, RefreshToken>
 ) {
 
     fun login(loginDTO: LoginDTO): TokenResponseDTO {
@@ -36,26 +39,33 @@ class AuthenticationService (
         val accessToken = this.issueTokenAccessToken(loginDTO.username)
         val refreshToken = "${UUID.randomUUID()}-${UUID.randomUUID()}"
 
+        val refreshTokenEntity = RefreshToken(refreshToken, loginDTO.username, LocalDateTime.now())
+
         redisTemplate.opsForValue()
-            .set(refreshToken, loginDTO.username, Duration.ofDays(7L))
+            .set(refreshToken, refreshTokenEntity, Duration.ofDays(7L))
 
         return TokenResponseDTO(accessToken, refreshToken)
     }
 
     fun getTokenPair(refreshToken: String): TokenResponseDTO {
-        val subject = redisTemplate.opsForValue()
+        val refreshTokenEntity = redisTemplate.opsForValue()
             .get(refreshToken) ?: throw InvalidTokenException("The provided refresh token has been revoked or expired")
 
-        val accessToken = this.issueTokenAccessToken(subject)
+        val accessToken = this.issueTokenAccessToken(refreshTokenEntity.subject)
         val newRefreshToken = "${UUID.randomUUID()}-${UUID.randomUUID()}"
 
-        redisTemplate.opsForValue()
-            .getAndDelete(refreshToken)
+        redisTemplate.opsForValue().getAndDelete(refreshTokenEntity.token)
 
+        val newRefreshTokenEntity = RefreshToken(newRefreshToken, refreshTokenEntity.subject, LocalDateTime.now())
         redisTemplate.opsForValue()
-            .set(newRefreshToken, subject, Duration.ofDays(7L))
+            .set(newRefreshToken, newRefreshTokenEntity, Duration.ofDays(7L))
 
         return TokenResponseDTO(accessToken, newRefreshToken)
+    }
+
+    fun findByToken(refreshToken: String): RefreshToken {
+        return redisTemplate.opsForValue().get(refreshToken) ?:
+            throw NotFoundException("This token has been revoked or expired")
     }
 
     private fun issueTokenAccessToken(subject: String) : String {

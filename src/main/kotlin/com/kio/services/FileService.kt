@@ -53,24 +53,27 @@ class FileService(
         val parentFolderNames = fileRepository.getFolderFilesNames(folder.files)
 
         for(file in files) {
-            val key = "${folder.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
+            val bucketKey = "${folder.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
 
             val s3Metadata = ObjectMetadata()
             s3Metadata.contentType = file.contentType
             s3Metadata.contentLength = file.size
 
-            s3.putObject(bucketProperties.filesBucket, key, file.inputStream, s3Metadata)
+            s3.putObject(bucketProperties.filesBucket, bucketKey, file.inputStream, s3Metadata)
 
             val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
 
-            val audioSamples = MetadataUtil.getAudioSamples(file)
+            var audioSamples: Array<Int>? = null
+            if(file.contentType!!.startsWith("audio")) {
+                audioSamples = MetadataUtil.getAudioSamples(file)
+            }
 
             val fileToSave = File(
                 name = validName,
                 details = FileDetails(audioSamples = audioSamples),
                 contentType = file.contentType ?: "UNKNOWN",
                 size = file.size,
-                bucketKey = key,
+                bucketKey = bucketKey,
                 parentFolder = folder.id!!,
                 visibility = folder.visibility,
                 metadata = FileMetadata(folder.metadata.ownerId),

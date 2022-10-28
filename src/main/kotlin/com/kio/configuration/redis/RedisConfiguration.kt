@@ -1,5 +1,6 @@
 package com.kio.configuration.redis
 
+import com.kio.entities.RefreshToken
 import com.kio.entities.SharedResource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -17,8 +18,8 @@ class RedisConfiguration {
     }
 
     @Bean(name = ["refreshTokenTemplate"])
-    fun refreshTokenTemplate(): RedisTemplate<String, String> {
-        val redisTemplate = RedisTemplate<String, String>()
+    fun refreshTokenTemplate(): RedisTemplate<String, RefreshToken> {
+        val redisTemplate = RedisTemplate<String, RefreshToken>()
         redisTemplate.setConnectionFactory(redisConnectionFactory())
         return redisTemplate
     }

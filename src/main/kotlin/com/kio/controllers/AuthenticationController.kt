@@ -2,6 +2,7 @@ package com.kio.controllers
 
 import com.kio.dto.request.auth.LoginDTO
 import com.kio.dto.request.auth.TokenResponseDTO
+import com.kio.entities.RefreshToken
 import com.kio.services.AuthenticationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -28,6 +29,12 @@ class AuthenticationController (private val authenticationService: Authenticatio
         val tokenResponse = authenticationService.getTokenPair(refreshToken)
         return ResponseEntity.status(HttpStatus.OK)
             .body(tokenResponse)
+    }
+
+    @PostMapping("/introspect")
+    fun instrospectToken(@RequestParam("refresh_token") refreshToken: String): ResponseEntity<RefreshToken> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(authenticationService.findByToken(refreshToken))
     }
 
 }

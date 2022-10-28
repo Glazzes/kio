@@ -17,9 +17,10 @@ class UserController(
 ) {
 
     @PostMapping
-    fun createNewUserAccount(@RequestBody @Valid request: SignUpRequest): ResponseEntity<UserDTO>{
+    fun createNewUserAccount(@RequestBody @Valid request: SignUpRequest): ResponseEntity<Unit> {
+        userService.save(request)
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(userService.save(request))
+            .build()
     }
 
     @GetMapping
