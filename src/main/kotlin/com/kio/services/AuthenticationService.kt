@@ -5,6 +5,7 @@ import com.kio.dto.request.auth.TokenResponseDTO
 import com.kio.entities.RefreshToken
 import com.kio.shared.exception.InvalidTokenException
 import com.kio.shared.exception.NotFoundException
+import com.kio.shared.utils.SecurityUtil
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.security.authentication.AuthenticationManager
@@ -81,6 +82,19 @@ class AuthenticationService (
         val claims = claimsSet.build()
         val params = JwtEncoderParameters.from(claims)
         return jwtEncoder.encode(params).tokenValue
+    }
+
+    fun revokeToken(refreshToken: String) {
+        val entity = redisTemplate.opsForValue()
+            .get(refreshToken) ?: throw NotFoundException("The refresh token has revoked or expired")
+
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        if(authenticatedUser.username != entity.subject) {
+            throw IllegalAccessException("You can not revoke a token that's not yours")
+        }
+
+        redisTemplate.opsForValue()
+            .getAndDelete(refreshToken)
     }
 
 }

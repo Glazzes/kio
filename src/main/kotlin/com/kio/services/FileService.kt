@@ -39,7 +39,11 @@ class FileService(
     private val s3: AmazonS3
 ) {
 
-    fun save(request: FileUploadRequest, files: List<MultipartFile>): Collection<FileDTO> {
+    fun save(
+        request: FileUploadRequest,
+        files: List<MultipartFile>,
+        thumbnails: List<MultipartFile>?
+    ): Collection<FileDTO> {
         val folder = this.findFolderById(request.to)
         val filesSize = files.sumOf { it.size }
 
@@ -49,29 +53,43 @@ class FileService(
             throw InsufficientStorageException("The owner of this folder has ran out of storage space")
         }
 
+        val thumbnailMap = thumbnails?.associateBy { it.originalFilename } ?: emptyMap()
+
         val filesToSave: MutableList<File> = ArrayList()
         val parentFolderNames = fileRepository.getFolderFilesNames(folder.files)
 
         for(file in files) {
             val bucketKey = "${folder.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
-
-            val s3Metadata = ObjectMetadata()
-            s3Metadata.contentType = file.contentType
-            s3Metadata.contentLength = file.size
-
-            s3.putObject(bucketProperties.filesBucket, bucketKey, file.inputStream, s3Metadata)
+            this.saveS3Object(file, bucketKey)
 
             val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
 
-            var audioSamples: Array<Int>? = null
+            val details = FileDetails(
+                dimensions = request.details[file.originalFilename!!]?.dimensions,
+                duration = request.details[file.originalFilename!!]?.duration
+            )
+
             if(file.contentType!!.startsWith("audio")) {
-                audioSamples = MetadataUtil.getAudioSamples(file)
+                val audioSamples = MetadataUtil.getAudioSamples(file)
+                details.audioSamples = audioSamples
+            }
+
+            if(file.contentType!!.startsWith("video") || file.contentType!!.endsWith("pdf")) {
+                if(thumbnailMap.containsKey(file.originalFilename!!)) {
+                    val key = "thumbnails/${bucketKey}"
+                    this.saveS3Object(thumbnailMap[file.originalFilename!!]!!, key)
+                    details.thumbnailKey = key
+                }
+            }
+
+            if(file.contentType!!.endsWith("pdf")) {
+                details.pages = MetadataUtil.getPdfPages(file)
             }
 
             val fileToSave = File(
                 name = validName,
-                details = FileDetails(audioSamples = audioSamples),
-                contentType = file.contentType ?: "UNKNOWN",
+                details = details,
+                contentType = file.contentType ?: "unknown",
                 size = file.size,
                 bucketKey = bucketKey,
                 parentFolder = folder.id!!,
@@ -159,6 +177,15 @@ class FileService(
 
         fileRepository.deleteAll(filesToDelete)
         s3.deleteObjects(deleteObjects)
+    }
+
+    private fun saveS3Object(file: MultipartFile, key: String) {
+        val s3ObjectMetadata = ObjectMetadata().apply {
+            contentType = file.contentType ?: "unknown"
+            contentLength = file.size
+        }
+
+        s3.putObject(bucketProperties.filesBucket, key, file.inputStream, s3ObjectMetadata)
     }
 
     private fun findFolderById(id: String): Folder {

@@ -1,5 +1,6 @@
 package com.kio.services
 
+import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.s3.AmazonS3
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.response.StaticResponseDTO
@@ -12,6 +13,7 @@ import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
+import java.io.BufferedInputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.servlet.http.HttpServletResponse
@@ -35,10 +37,35 @@ class StaticService(
             PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_ONLY)
         }
 
-        val content = s3.getObject(buckets.filesBucket, file.bucketKey)
-            .objectContent
+        try{
+            val s3Object = s3.getObject(buckets.filesBucket, file.bucketKey) ?:
+                throw NotFoundException("This file does not exists")
 
-        return StaticResponseDTO(file.contentType, content)
+            val content = s3Object.objectContent
+
+            return StaticResponseDTO(file.contentType, content)
+        }catch (e: AmazonServiceException) {
+            throw NotFoundException(e.message)
+        }
+    }
+
+    fun downloadThumbnail(fileId: String): StaticResponseDTO {
+        val file = fileRepository.findById(fileId)
+            .orElseThrow { NotFoundException("File with id $fileId does not exists") }
+
+        if(file.details.thumbnailKey == null) {
+            throw NotFoundException("File with id $fileId does not have thumbnail")
+        }
+
+        try{
+            val s3Object = s3.getObject(buckets.filesBucket, file.details.thumbnailKey) ?:
+                throw NotFoundException("This file does not exists")
+
+            val content = s3Object.objectContent
+            return StaticResponseDTO(file.contentType, content)
+        }catch (e: AmazonServiceException) {
+            throw NotFoundException(e.message)
+        }
     }
 
     fun downloadFolderById(id: String, response: HttpServletResponse) {

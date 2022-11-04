@@ -17,10 +17,11 @@ class FileController (val fileService: FileService){
     @PostMapping
     fun save(
         @RequestParam request: FileUploadRequest,
-        @RequestPart files: List<MultipartFile>
+        @RequestPart files: List<MultipartFile>,
+        @RequestPart thumbnails: List<MultipartFile>?,
     ): ResponseEntity<Collection<FileDTO>> {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(fileService.save(request, files))
+            .body(fileService.save(request, files, thumbnails))
     }
 
     @GetMapping(path = ["/{id}"])

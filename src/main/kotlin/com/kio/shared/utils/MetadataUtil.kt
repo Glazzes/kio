@@ -38,16 +38,9 @@ object MetadataUtil {
         return audioData.data
     }
 
-    fun getPdfMetadata(file: MultipartFile): ByteArray {
-        val thumbnailPath = "${tmpDir}/${UUID.randomUUID()}.png"
-
+    fun getPdfPages(file: MultipartFile): Int {
         val pdf = PDDocument.load(file.inputStream)
-        val renderer = PDFRenderer(pdf).renderImage(0)
-        ImageIO.write(renderer, "png", File(thumbnailPath))
-        val bytes = Files.readAllBytes(Paths.get(thumbnailPath))
-        cleanUp(thumbnailPath)
-
-        return bytes
+        return pdf.numberOfPages
     }
 
     private fun cleanUp(vararg paths: String) {

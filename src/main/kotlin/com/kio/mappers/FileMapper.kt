@@ -7,6 +7,7 @@ object FileMapper {
 
     fun toFileDTO(file: File) = FileDTO(
         id = file.id!!,
+        ownerId = file.metadata.ownerId,
         name = file.name,
         size = file.size,
         contentType = file.contentType,

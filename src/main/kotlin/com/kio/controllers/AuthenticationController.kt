@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -35,6 +36,15 @@ class AuthenticationController (private val authenticationService: Authenticatio
     fun instrospectToken(@RequestParam("refresh_token") refreshToken: String): ResponseEntity<RefreshToken> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(authenticationService.findByToken(refreshToken))
+    }
+
+    @PostMapping("/revoke")
+    fun revokeToken(
+        @RequestParam(name = "refresh_token") refreshToken: String
+    ) : ResponseEntity<Unit> {
+        authenticationService.revokeToken(refreshToken)
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+            .build()
     }
 
 }

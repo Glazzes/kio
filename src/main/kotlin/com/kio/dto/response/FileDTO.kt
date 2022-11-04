@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 data class FileDTO(
     val id: String,
+    val ownerId: String,
     val name: String,
     val size: Long,
     val contentType: String,

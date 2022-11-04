@@ -26,6 +26,16 @@ class StaticController(private val staticService: StaticService){
             .body(InputStreamResource(fileToDownload))
     }
 
+    @GetMapping(path = ["/file/{id}/thumbnail"])
+    fun downloadThumbnailByFileId(@PathVariable id: String): ResponseEntity<InputStreamResource> {
+        val dto = staticService.downloadThumbnail(id)
+        val fileToDownload = dto.inputStream
+
+        return ResponseEntity.status(HttpStatus.OK)
+            .contentType(MediaType.valueOf(dto.contentType))
+            .body(InputStreamResource(fileToDownload))
+    }
+
     @GetMapping(path = ["/folder/{id}"])
     fun downloadFolderById(@PathVariable id: String, response: HttpServletResponse): ResponseEntity<Unit> {
         staticService.downloadFolderById(id, response)
