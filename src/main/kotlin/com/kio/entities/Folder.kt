@@ -15,7 +15,6 @@ class Folder(
     var isFavorite: Boolean = false,
     var folderType: FolderType = FolderType.REGULAR,
     var visibility: FileVisibility = FileVisibility.OWNER,
-    var color: String = "#3366ff",
     var parentFolder: String? = null,
     val subFolders: MutableSet<String> = HashSet(),
     val files: MutableSet<String> = HashSet(),

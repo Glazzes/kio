@@ -2,6 +2,7 @@ package com.kio.dto.response
 
 import com.kio.entities.details.FileDetails
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class FileDTO(
     val id: String,
@@ -10,6 +11,6 @@ data class FileDTO(
     val size: Long,
     val contentType: String,
     val details: FileDetails,
-    val createdAt: LocalDate,
-    val lastModified: LocalDate
+    val createdAt: String,
+    val lastModified: String
 )

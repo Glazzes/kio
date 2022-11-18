@@ -1,7 +1,6 @@
 package com.kio.dto.response
 
 import com.kio.entities.details.FolderDetails
-import java.time.LocalDate
 
 data class FolderDTO(
     val id: String,
@@ -9,7 +8,7 @@ data class FolderDTO(
     val name: String,
     val color: String,
     val summary: FolderDetails,
-    val createdAt: LocalDate,
-    val lastModified: LocalDate,
+    val createdAt: String,
+    val lastModified: String,
     val contributors: Collection<ContributorDTO>,
 )

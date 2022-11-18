@@ -48,7 +48,8 @@ class FileService(
         val filesSize = files.sumOf { it.size }
 
         PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
-        val canUpload = spaceService.canUpload(folder, filesSize)
+        val canUpload = spaceService.hasEnoughStorageToPerformOperation(folder, filesSize)
+
         if(!canUpload) {
             throw InsufficientStorageException("The owner of this folder has ran out of storage space")
         }
@@ -162,6 +163,7 @@ class FileService(
         }
 
         PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE, Permission.DELETE)
+
         val filesToDelete = fileRepository.findByIdIsIn(deleteRequest.files)
         val filesToDeleteSize = filesToDelete.sumOf { it.size }
 
@@ -175,8 +177,8 @@ class FileService(
             this.summary.size -= filesToDeleteSize
         })
 
-        fileRepository.deleteAll(filesToDelete)
         s3.deleteObjects(deleteObjects)
+        fileRepository.deleteAll(filesToDelete)
     }
 
     private fun saveS3Object(file: MultipartFile, key: String) {

@@ -1,22 +1,24 @@
 package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.DeleteObjectsRequest
+import com.amazonaws.services.s3.model.CopyObjectRequest
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.request.file.FileCopyRequest
 import com.kio.dto.response.FileDTO
+import com.kio.dto.response.FolderDTO
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
 import com.kio.mappers.FileMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
-import com.kio.shared.enums.FileCopyStrategy
+import com.kio.shared.exception.BadRequestException
+import com.kio.shared.exception.InsufficientStorageException
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
 import java.util.*
+import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 @Service
@@ -25,75 +27,90 @@ class CopyService(
     private val folderRepository: FolderRepository,
     private val bucketConfigurationProperties: BucketConfigurationProperties,
     private val copyUtilService: CopyUtilService,
+    private val spaceService: SpaceService,
     private val s3: AmazonS3
 ){
 
+    fun copyFolders(copyRequest: FileCopyRequest): Collection<FolderDTO> {
+        val source = this.findFolderById(copyRequest.from)
+        val destination = this.findFolderById(copyRequest.to)
+        val foldersToCopy = folderRepository.findByIdIsIn(copyRequest.items)
+
+        var operationSize: Long = 0
+        for(folder in foldersToCopy) {
+            val size = spaceService.calculateFolderSize(folder)
+            operationSize += size
+        }
+
+        val canCopy = spaceService.hasEnoughStorageToPerformOperation(destination, operationSize)
+        if(!canCopy) {
+            throw InsufficientStorageException("Owner of this unit has ran out space")
+        }
+
+        return emptyList()
+    }
+
+    private fun performCopyFoldersOperation(source: Folder, destination: Folder, folders: Collection<String>): Collection<FolderDTO> {
+        return emptyList()
+    }
+
+
     fun copyFiles(copyRequest: FileCopyRequest): Collection<FileDTO> {
-        val source = this.findFolderById(copyRequest.sourceId)
-        val destination = this.findFolderById(copyRequest.destinationId)
+        val source = this.findFolderById(copyRequest.from)
+        val destination = this.findFolderById(copyRequest.to)
+
+        this.verifyCopyFilePermissions(source, destination, copyRequest.items)
+        val filesToCopy = fileRepository.findByIdIsIn(copyRequest.items)
+        val operationSize = filesToCopy.sumOf { it.size }
+
+        val canCopy = spaceService.hasEnoughStorageToPerformOperation(destination, operationSize)
+        if(!canCopy) {
+            throw InsufficientStorageException("Owner of this folder has ran out of space")
+        }
+
+        return this.performCopyOperation(destination, filesToCopy)
+    }
+
+    private fun verifyCopyFilePermissions(source: Folder, destination: Folder, files: Collection<String>) {
+        if(!source.files.containsAll(files)) {
+            throw BadRequestException("Some of the files to copy do not belong to the source folder")
+        }
 
         PermissionValidatorUtil.verifyFolderPermissions(source, Permission.READ_WRITE)
         PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
-
-        val sourceFiles = fileRepository.findByIdIsIn(source.files)
-        val destinationFiles = fileRepository.findByIdIsIn(destination.files)
-
-        if(copyRequest.strategy == FileCopyStrategy.OVERWRITE) {
-            return this.copyFilesWithOverwriteStrategy(destination, sourceFiles, destinationFiles)
-        }
-
-        return this.copyFilesWithRenameStrategy(destination, sourceFiles, destinationFiles)
     }
 
-    private fun copyFilesWithRenameStrategy(
+    private fun performCopyOperation(
         destination: Folder,
-        sourceFiles: Collection<File>,
-        destinationFiles: Collection<File>
+        filesToCopy: Collection<File>,
     ): Collection<FileDTO> {
-        val destinationFilenames = destinationFiles.map { it.name }
-        val newFiles: MutableSet<File> = HashSet()
+        val filesToSave: MutableSet<File> = HashSet()
+        val copySize = filesToCopy.sumOf { it.size }
 
-        for(file in sourceFiles) {
-            val newName = FileUtils.getValidName(file.name, destinationFilenames)
+        destination.apply {
+            summary.files += filesToCopy.size
+            summary.files = summary.files + copySize
+        }
+
+        for(file in filesToCopy) {
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
 
-            val newFile = copyUtilService.cloneFile(file, destination, newName, bucketKey)
-            newFiles.add(newFile)
+            val newFile = copyUtilService.cloneFile(file, destination, bucketKey)
+            filesToSave.add(newFile)
 
-            val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)
-            s3.putObject(bucketConfigurationProperties.filesBucket, newFile.bucketKey, s3Object.objectContent, s3Object.objectMetadata)
+            val copyObjectRequest = CopyObjectRequest().apply {
+                destinationBucketName = bucketConfigurationProperties.filesBucket
+                sourceBucketName = bucketConfigurationProperties.filesBucket
+                sourceKey = file.bucketKey
+                destinationKey = bucketKey
+            }
+
+            s3.copyObject(copyObjectRequest)
         }
 
-        return fileRepository.saveAll(newFiles)
-            .map { FileMapper.toFileDTO(it) }
-    }
+        folderRepository.save(destination)
 
-    private fun copyFilesWithOverwriteStrategy(
-        destination: Folder,
-        sourceFiles: Collection<File>,
-        destinationFiles: Collection<File>
-    ): Collection<FileDTO> {
-        val sourceFileNames = sourceFiles.map { it.name }
-        val filesToDelete = destinationFiles.filter { sourceFileNames.contains(it.name) }
-
-        if(filesToDelete.isNotEmpty()) {
-            val deleteObjects = DeleteObjectsRequest(bucketConfigurationProperties.filesBucket)
-            deleteObjects.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
-            s3.deleteObjects(deleteObjects)
-        }
-
-        val newFiles = mutableSetOf<File>()
-        for(file in sourceFiles) {
-            val bucketKey = "${destination.id}/${UUID.randomUUID()}"
-            val newFile = copyUtilService.cloneFile(file, destination, file.name, bucketKey)
-            newFiles.add(newFile)
-
-            val s3Object = s3.getObject(bucketConfigurationProperties.filesBucket, file.bucketKey)
-            s3.putObject(bucketConfigurationProperties.filesBucket, newFile.bucketKey, s3Object.objectContent, s3Object.objectMetadata)
-        }
-
-        fileRepository.deleteAll(filesToDelete)
-        return fileRepository.saveAll(newFiles)
+        return fileRepository.saveAll(filesToSave)
             .map { FileMapper.toFileDTO(it) }
     }
 

@@ -16,11 +16,11 @@ class CopyUtilService(
     private val folderRepository: FolderRepository
 ){
 
-    fun cloneFile(file: File, parentFolder: Folder, newName: String, bucketKey: String): File {
+    fun cloneFile(file: File, parentFolder: Folder, bucketKey: String): File {
         return File(
             id = null,
-            name = newName,
-            details = FileDetails(),
+            name = file.name,
+            details = file.details,
             contentType = file.contentType,
             size = file.size,
             bucketKey = bucketKey,

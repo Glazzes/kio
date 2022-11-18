@@ -1,6 +1,5 @@
 package com.kio.controllers
 
-import com.kio.dto.request.folder.FolderCreateRequest
 import com.kio.dto.request.folder.FolderEditRequest
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
@@ -33,8 +32,8 @@ class FolderController(private val folderService: FolderService) {
     }
 
     @PostMapping(path = ["/{id}"])
-    fun save(@PathVariable id: String, @RequestBody request: FolderCreateRequest): ResponseEntity<FolderDTO> {
-        val createdFolderDTO = folderService.save(id, request)
+    fun save(@PathVariable id: String, @RequestParam name: String): ResponseEntity<FolderDTO> {
+        val createdFolderDTO = folderService.save(id, name)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(createdFolderDTO)
     }

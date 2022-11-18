@@ -1,9 +1,6 @@
 package com.kio.services
 
-import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.kio.dto.request.file.FileCopyRequest
-import com.kio.dto.request.folder.FolderCopyRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
@@ -16,12 +13,8 @@ import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
-import com.kio.shared.enums.FileCopyStrategy
-import com.kio.shared.enums.FolderCopyStrategy
-import com.kio.shared.exception.AlreadyExistsException
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
 
@@ -31,189 +24,104 @@ class CutService(
     private val fileRepository: FileRepository,
     private val userRepository: UserRepository,
     private val copyUtilService: CopyUtilService,
-    private val s3: AmazonS3
 ){
 
-    fun cutFolder(request: FolderCopyRequest): Collection<FolderDTO> {
-        val source = this.findFolderById(request.source)
-        val destination = this.findFolderById(request.destination)
+    fun cutFolders(cutRequest: FileCopyRequest): Collection<FolderDTO> {
+        val source = this.findFolderById(cutRequest.from)
+        val destination = this.findFolderById(cutRequest.to)
 
-        PermissionValidatorUtil.isResourceOwner(source)
-        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
-        copyUtilService.canCutFolder(source, destination)
+        this.verifyCutFolderOperationPermissions(source, destination)
 
+        val foldersToCut = folderRepository.findByIdIsIn(cutRequest.items)
+        return this.performCutFolderOperation(source, destination, foldersToCut)
+    }
+
+    private fun verifyCutFolderOperationPermissions(source: Folder, destination: Folder) {
         if(source.id == destination.id) {
             throw IllegalOperationException("You can not cut a folder and save them into the same folder they come from")
         }
 
-        if(request.folderCopyStrategy == FolderCopyStrategy.OMIT) {
-            this.cutFolderWithOmitStrategy(source, destination, request)
-            return emptyList()
-        }
-
-        this.cutFolderWithMixStrategy(source, destination, request)
-        return emptyList()
-    }
-
-    private fun cutFolderWithOmitStrategy(source: Folder, destination: Folder, request: FolderCopyRequest): FolderDTO {
-        val destinationSubFolders = folderRepository.findByIdIsIn(destination.subFolders)
-            .associateBy { it.name }
-
-        if(destinationSubFolders.containsKey(source.name)) {
-            throw AlreadyExistsException("No files were copied as a folder with name ${source.name} already exists")
-        }
-
-        val sourceParent = this.findFolderById(source.parentFolder!!)
-        folderRepository.save(sourceParent.apply { subFolders.remove(request.source) })
-        folderRepository.save(destination.apply { subFolders.add(request.source) })
-        return FolderMapper.toFolderDTO(destination, this.findFolderContributors(destination))
-    }
-
-    private fun cutFolderWithMixStrategy(source: Folder, destination: Folder, request: FolderCopyRequest) {
-        val sourceParent = this.findFolderById(source.parentFolder!!)
-        val destinationSubFolders = folderRepository.findByIdIsIn(destination.subFolders)
-            .associateBy { it.name }
-
-        val destinationSubFolder = destinationSubFolders[source.name]
-
-        if(destinationSubFolder == null) {
-            sourceParent.subFolders.remove(source.id!!)
-            destination.subFolders.add(source.id!!)
-            source.parentFolder = destination.id!!
-
-            folderRepository.saveAll(listOf(sourceParent, source, destination))
-            return
-        }
-
-        val sourceFiles = fileRepository.findByIdIsIn(source.files)
-        val destinationFiles = fileRepository.findByIdIsIn(destinationSubFolder.files)
-
-        if(request.fileCopyStrategy == FileCopyStrategy.OVERWRITE) {
-            this.cutFilesWithOverwriteStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
-        }
-
-        if(request.fileCopyStrategy == FileCopyStrategy.RENAME) {
-            this.cutFilesWithRenameStrategy(source, destinationSubFolder, sourceFiles, destinationFiles)
-        }
-
-        val sourceSubFolders = folderRepository.findByIdIsIn(source.subFolders)
-            .associateBy { it.name }
-
-        val destinationPlusOneLevel = folderRepository.findByIdIsIn(destinationSubFolders.map { it.value.id!! })
-            .associateBy { it.name }
-
-        for(sourceSubFolder in sourceSubFolders) {
-            val destinationSourceEquivalent = destinationPlusOneLevel[sourceSubFolder.key]
-
-            if(destinationSourceEquivalent == null) {
-                val dest = destinationSubFolders[source.name]!!.apply {
-                    subFolders.add(sourceSubFolder.value.id!!)
-                }
-
-                sourceSubFolder.value.apply { parentFolder =  dest.id!! }
-                folderRepository.saveAll(listOf(source, sourceSubFolder.value, dest))
-                continue
-            }
-
-            this.cutFolderWithMixStrategy(sourceSubFolder.value, destinationSourceEquivalent, request)
-        }
-
-        folderRepository.delete(source)
-    }
-
-    fun cutFiles(request: FileCopyRequest): Collection<FileDTO> {
-        val source = this.findFolderById(request.sourceId)
-        val destination = this.findFolderById(request.destinationId)
-
         PermissionValidatorUtil.isResourceOwner(source)
         PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
+        copyUtilService.canCutFolder(source, destination)
+    }
 
+    private fun performCutFolderOperation(source: Folder, destination: Folder, folders: Collection<Folder>): Collection<FolderDTO> {
+        val cutSize = folders.sumOf { it.summary.size }
+        val folderIds = folders.map { it.id!! }.toSet()
+
+        source.apply {
+            summary.size = summary.size - cutSize
+            summary.folders = summary.folders - folders.size
+            subFolders.removeAll(folderIds)
+        }
+
+        destination.apply {
+            summary.size += cutSize
+            summary.folders += folders.size
+            subFolders.addAll(folderIds)
+        }
+
+        val cutFolders = folders.map { it.apply {
+            parentFolder = destination.id
+        } }
+
+        folderRepository.saveAll(mutableSetOf(source, destination))
+        return folderRepository.saveAll(cutFolders)
+            .map { FolderMapper.toFolderDTO(it, emptyList()) }
+    }
+
+    fun cutFiles(copyRequest: FileCopyRequest): Collection<FileDTO> {
+        val source = this.findFolderById(copyRequest.from)
+        val destination = this.findFolderById(copyRequest.to)
+
+        this.verifyCutFilesOperationPermissions(source, destination, copyRequest.items)
+
+        val filesToCopy = fileRepository.findByIdIsIn(copyRequest.items)
+        return this.performCutFilesOperation(source, destination, filesToCopy)
+    }
+
+    private fun verifyCutFilesOperationPermissions(source: Folder, destination: Folder, files: Collection<String>) {
         if(source.id == destination.id) {
             throw IllegalOperationException("You can not cut files and save them into the same folder they come from")
         }
 
-        if(!source.files.containsAll(request.files.toSet())) {
+        if(!source.files.containsAll(files)) {
             throw IllegalOperationException("At least one of the files to cut does not belong to source")
         }
 
-        val sourceFiles = fileRepository.findByIdIsIn(request.files)
-        val destinationFiles = fileRepository.findByIdIsIn(destination.files)
-
-        if(request.strategy == FileCopyStrategy.OVERWRITE) {
-            return this.cutFilesWithOverwriteStrategy(source, destination, sourceFiles, destinationFiles)
-        }
-
-        return this.cutFilesWithRenameStrategy(source, destination, sourceFiles, destinationFiles)
+        PermissionValidatorUtil.isResourceOwner(source)
+        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
     }
 
-    private fun cutFilesWithOverwriteStrategy(
+    private fun performCutFilesOperation(
         source: Folder,
         destination: Folder,
-        sourceFiles: Collection<File>,
-        destinationFiles: Collection<File>
+        filesToCut: Collection<File>,
     ): Collection<FileDTO> {
-        val sourceFileNames = sourceFiles.map { it.name }.toSet()
-        val sourceIdsToDelete = sourceFiles.map { it.id!! }.toSet()
-        val destinationFilesToDelete = destinationFiles.filter { sourceFileNames.contains(it.name) }
+        val cutSize = filesToCut.sumOf { it.size }
+        val fileIds = filesToCut.map { it.id!! }
 
-        val sourceFilesSize = sourceFiles.sumOf { it.size }
-        val destinationFilesToDeleteSize = destinationFilesToDelete.sumOf { it.size }
+        source.apply {
+            summary.files = summary.files - filesToCut.size
+            summary.size -= cutSize
+            files.removeAll(fileIds.toSet())
+        }
 
-        val cutFiles = sourceFiles.map { it.apply {
+        destination.apply {
+            summary.files += filesToCut.size
+            summary.size += cutSize
+            files.addAll(fileIds.toSet())
+        }
+
+        val modifiedFiles = filesToCut.map { it.apply {
             parentFolder = destination.id!!
             metadata = FileMetadata(destination.metadata.ownerId)
         } }
 
-        if(destinationFilesToDelete.isNotEmpty()) {
-            val deleteObjects = DeleteObjectsRequest("files.kio.com").apply {
-                keys = destinationFilesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
-            }
+        folderRepository.saveAll(mutableListOf(source, destination))
 
-            s3.deleteObjects(deleteObjects)
-        }
-
-        folderRepository.save(source.apply {
-            this.files.removeAll(sourceIdsToDelete)
-            this.summary.files += (cutFiles.size - destinationFilesToDelete.size)
-            this.summary.size -= sourceFilesSize
-        })
-
-        folderRepository.save(destination.apply {
-            files.addAll(sourceIdsToDelete)
-            this.summary.size += (sourceFilesSize - destinationFilesToDeleteSize)
-        })
-
-        fileRepository.deleteAll(destinationFilesToDelete)
-
-        return fileRepository.saveAll(cutFiles)
-            .map { FileMapper.toFileDTO(it) }
-    }
-
-    private fun cutFilesWithRenameStrategy(
-        source: Folder,
-        destination: Folder,
-        sourceFiles: Collection<File>,
-        destinationFiles: Collection<File>
-    ): Collection<FileDTO> {
-        val destinationFileNames = destinationFiles.map { it.name }.toSet()
-        val sourceIdsToDelete = sourceFiles.map { it.id!! }.toSet()
-        val sourceFilesSize = sourceFiles.sumOf { it.size }
-
-        val cutFiles = sourceFiles.map { it.apply {
-            name = FileUtils.getValidName(this.name, destinationFileNames)
-            parentFolder = destination.id!!
-            metadata = FileMetadata(destination.metadata.ownerId)
-        } }
-
-        val newFileIds = cutFiles.map { it.id!! }.toSet()
-
-        folderRepository.save(source.apply { files.removeAll(sourceIdsToDelete) })
-        folderRepository.save(destination.apply {
-            this.files.addAll(newFileIds)
-            this.summary.size += sourceFilesSize
-            this.summary.files += cutFiles.size
-        })
-        return fileRepository.saveAll(cutFiles)
+        return fileRepository.saveAll(modifiedFiles)
             .map { FileMapper.toFileDTO(it) }
     }
 

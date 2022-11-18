@@ -40,7 +40,9 @@ object MetadataUtil {
 
     fun getPdfPages(file: MultipartFile): Int {
         val pdf = PDDocument.load(file.inputStream)
-        return pdf.numberOfPages
+        val pages = pdf.numberOfPages
+        pdf.close()
+        return pages
     }
 
     private fun cleanUp(vararg paths: String) {

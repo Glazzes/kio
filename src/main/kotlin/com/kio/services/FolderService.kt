@@ -2,14 +2,12 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
-import com.kio.dto.request.folder.FolderCreateRequest
 import com.kio.dto.request.folder.FolderEditRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
 import com.kio.entities.details.FileMetadata
 import com.kio.entities.Folder
-import com.kio.entities.User
 import com.kio.entities.enums.FileVisibility
 import com.kio.entities.enums.FolderType
 import com.kio.entities.enums.Permission
@@ -18,16 +16,14 @@ import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
-import com.kio.shared.enums.FolderCreationStrategy
-import com.kio.shared.exception.AlreadyExistsException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
 @Service
@@ -39,21 +35,16 @@ class FolderService(
     private val s3: AmazonS3
 ){
 
-    private val defaultPageSize: Int = 20
+    @Value("\${kio.default-page-size}")
+    private var defaultPageSize: Int? = null
 
-    fun save(parentFolderId: String, request: FolderCreateRequest): FolderDTO {
+    fun save(parentFolderId: String, name: String): FolderDTO {
         val parentFolder = this.findByInternal(parentFolderId)
+
         PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE)
 
-        val subFolderNames = folderRepository.findFolderNamesByParentId(parentFolderId)
-            .map { it.getName() }
-
-        if(subFolderNames.contains(request.name) && request.strategy == FolderCreationStrategy.OMIT) {
-            throw AlreadyExistsException("A folder with name ${request.name} already exists within folder $parentFolderId")
-        }
-
         val newFolder = Folder(
-            name = FileUtils.getValidName(request.name, subFolderNames),
+            name = name,
             visibility = parentFolder.visibility,
             contributors = parentFolder.contributors,
             parentFolder = parentFolderId,
@@ -61,6 +52,7 @@ class FolderService(
         )
 
         val savedFolder = folderRepository.save(newFolder)
+
         folderRepository.save(parentFolder.apply {
             this.subFolders.add(savedFolder.id!!)
             this.summary.folders++
@@ -94,7 +86,6 @@ class FolderService(
             .map { it.getName() }
 
         folder.apply {
-            this.color = request.color
             this.name = FileUtils.getValidName(request.name, folderNames)
             this.visibility = request.visibility
         }
@@ -146,21 +137,21 @@ class FolderService(
 
         val pageRequest = PageRequest.of(
             page,
-            defaultPageSize,
+            defaultPageSize!!,
             Sort.by(Sort.Direction.DESC, "metadata.lastModifiedDate")
         )
 
-        val page = folderRepository.findByIdIsIn(folder.subFolders, pageRequest)
-        page.removeAll { !PermissionValidatorUtil.verifyFolderPermissionsAsBoolean(it, Permission.READ_ONLY) }
+        val folderPage = folderRepository.findByIdIsIn(folder.subFolders, pageRequest)
+        folderPage.removeAll { !PermissionValidatorUtil.verifyFolderPermissionsAsBoolean(it, Permission.READ_ONLY) }
 
-        return page.map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+        return folderPage.map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
     }
 
     fun findFilesByFolderId(id: String, page: Int): Page<FileDTO> {
         val folder = this.findByInternal(id)
         val pageRequest = PageRequest.of(
             page,
-            defaultPageSize,
+            defaultPageSize!!,
             Sort.by(Sort.Direction.DESC, "metadata.lastModifiedDate")
         )
 
