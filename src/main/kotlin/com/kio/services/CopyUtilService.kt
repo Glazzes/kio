@@ -10,6 +10,8 @@ import com.kio.shared.exception.FileTreeException
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.utils.FileUtils
 import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
 class CopyUtilService(
@@ -27,19 +29,18 @@ class CopyUtilService(
             parentFolder = parentFolder.id!!,
             visibility = parentFolder.visibility,
             metadata = FileMetadata(parentFolder.metadata.ownerId)
-        )
+        ).apply {
+            metadata.createdAt = LocalDate.now()
+            metadata.lastModifiedDate = LocalDateTime.now()
+        }
     }
 
     fun cloneFolder(folder: Folder, parentFolder: Folder): Folder {
-        val subFolderNames = folderRepository.findFolderNamesByParentId(parentFolder.id!!)
-            .map { it.getName() }
-
         return Folder(
             id = null,
-            name = FileUtils.getValidName(folder.name, subFolderNames),
+            name = folder.name,
             folderType = folder.folderType,
             visibility = parentFolder.visibility,
-            color = folder.color,
             parentFolder = parentFolder.id,
             subFolders = folder.subFolders,
             files = folder.files,
@@ -47,7 +48,10 @@ class CopyUtilService(
             sharedWith = mutableSetOf(),
             metadata = FileMetadata(parentFolder.metadata.ownerId),
             summary = folder.summary
-        )
+        ).apply {
+            metadata.createdAt = LocalDate.now()
+            metadata.lastModifiedDate = LocalDateTime.now()
+        }
     }
 
     fun canCutFolder(source: Folder, destination: Folder) {
@@ -55,8 +59,8 @@ class CopyUtilService(
             throw IllegalOperationException("You can not cut a folder and paste it within itself")
         }
 
-        if(source.folderType == FolderType.ROOT) {
-            throw IllegalOperationException("You can not cut a unit folder")
+        if(destination.folderType == FolderType.ROOT) {
+            throw IllegalOperationException("You can not cut folders to a unit folder")
         }
 
         val sourceContainsDestination = this.isDestinationWithinSource(source.subFolders,destination.id!!)

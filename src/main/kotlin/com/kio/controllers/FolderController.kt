@@ -3,6 +3,7 @@ package com.kio.controllers
 import com.kio.dto.request.folder.FolderEditRequest
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
+import com.kio.dto.response.UnitSizeDTO
 import com.kio.services.FolderService
 import org.springframework.data.domain.Page
 import org.springframework.http.HttpStatus
@@ -50,6 +51,12 @@ class FolderController(private val folderService: FolderService) {
             .body(folderService.findFilesByFolderId(id, page))
     }
 
+    @GetMapping("/unit/size")
+    fun findUnitSize(): ResponseEntity<UnitSizeDTO> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(folderService.findUnitSize())
+    }
+
     @GetMapping(path = ["/{id}/size"])
     fun findFolderSize(@PathVariable id: String): ResponseEntity<Long> {
         return ResponseEntity.status(HttpStatus.OK)
@@ -78,8 +85,8 @@ class FolderController(private val folderService: FolderService) {
     }
 
     @DeleteMapping(path = ["/{id}"])
-    fun delete(@PathVariable id: String, @RequestBody subFolders: Collection<String>): ResponseEntity<Unit> {
-        folderService.deleteAll(id, subFolders)
+    fun delete(@PathVariable id: String): ResponseEntity<Unit> {
+        folderService.deleteFolder(id)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

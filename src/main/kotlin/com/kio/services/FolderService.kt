@@ -2,10 +2,12 @@ package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
+import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.request.folder.FolderEditRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
+import com.kio.dto.response.UnitSizeDTO
 import com.kio.entities.details.FileMetadata
 import com.kio.entities.Folder
 import com.kio.entities.enums.FileVisibility
@@ -32,6 +34,7 @@ class FolderService(
     private val fileRepository: FileRepository,
     private val userRepository: UserRepository,
     private val spaceService: SpaceService,
+    private val bucketProperties: BucketConfigurationProperties,
     private val s3: AmazonS3
 ){
 
@@ -165,49 +168,54 @@ class FolderService(
             .toSet()
     }
 
+    fun findUnitSize(): UnitSizeDTO {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT) ?:
+            throw NotFoundException("User with id ${authenticatedUser.id} has no unit, how?!!!")
+
+        val used = spaceService.calculateFolderSize(userUnit)
+        return UnitSizeDTO(used, authenticatedUser.plan.space)
+    }
+
     fun findFolderSizeById(id: String): Long {
         val folder = this.findByInternal(id)
        return spaceService.calculateFolderSize(folder)
     }
 
-    fun deleteAll(from: String, subFoldersIds: Collection<String>) {
-        val parentFolder = this.findByInternal(from)
+    fun deleteFolder(id: String) {
+        val folderToDelete = this.findByInternal(id)
+        PermissionValidatorUtil.verifyFolderPermissions(folderToDelete, Permission.DELETE)
 
-        if(!parentFolder.subFolders.containsAll(subFoldersIds)) {
-            throw NotFoundException("At least one of the folders to delete does not belong to its parent")
+        val parentFolder = this.findByInternal(folderToDelete.parentFolder!!)
+        val foldersToDelete = this.deleteContentsRecursively(folderToDelete)
+
+        parentFolder.apply {
+            summary.folders = summary.folders - 1
+            subFolders.remove(folderToDelete.id)
         }
 
-        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.DELETE)
-        val subFolders = folderRepository.findByIdIsIn(subFoldersIds)
-        for(sub in subFolders) {
-            this.deleteSubFoldersAndFiles(sub.subFolders)
-        }
-
-        folderRepository.save(parentFolder.apply {
-            this.subFolders.removeAll(subFoldersIds.toSet())
-            this.summary.folders -= subFolders.size
-        })
-
-        folderRepository.deleteAll(subFolders)
+        folderRepository.deleteAll(foldersToDelete)
     }
 
-    private fun deleteSubFoldersAndFiles(subFolderIds: Collection<String>) {
-        val subFolders = folderRepository.findByIdIsIn(subFolderIds)
-        val foldersToDelete = subFolders.map { it.subFolders }.flatten()
+    fun deleteContentsRecursively(folder: Folder, container: MutableCollection<Folder> = mutableSetOf()): MutableCollection<Folder> {
+        val subFolders = folderRepository.findByIdIsIn(folder.subFolders)
+        container.add(folder)
 
-        val fileIds = subFolders.map { it.files }.flatten()
-        val filesToDelete = fileRepository.findByIdIsIn(fileIds)
+        if(folder.files.isNotEmpty()) {
+            val files = fileRepository.findByIdIsIn(folder.files)
+            val deleteObjectsRequest = DeleteObjectsRequest(bucketProperties.filesBucket).apply {
+                keys = files.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+            }
 
-        folderRepository.deleteAll(subFolders)
-        fileRepository.deleteAll(filesToDelete)
-
-        if(filesToDelete.isNotEmpty()) {
-            val deleteObjectsRequest = DeleteObjectsRequest("files.kio.com")
-            deleteObjectsRequest.keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
             s3.deleteObjects(deleteObjectsRequest)
-
-            deleteSubFoldersAndFiles(foldersToDelete)
+            fileRepository.deleteAll(files)
         }
+
+        for (sub in subFolders) {
+            this.deleteContentsRecursively(sub, container)
+        }
+
+        return container
     }
 
     private fun findByInternal(id: String): Folder {

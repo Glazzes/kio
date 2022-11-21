@@ -15,7 +15,6 @@ object FolderMapper {
         id = folder.id!!,
         ownerId = folder.metadata.ownerId,
         name = folder.name,
-        color = folder.color,
         createdAt = folder.metadata.createdAt!!.format(formatter),
         lastModified = folder.metadata.lastModifiedDate!!.format(formatter),
         summary = folder.summary,

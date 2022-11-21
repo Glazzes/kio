@@ -6,7 +6,6 @@ data class FolderDTO(
     val id: String,
     val ownerId: String,
     val name: String,
-    val color: String,
     val summary: FolderDetails,
     val createdAt: String,
     val lastModified: String,

@@ -26,7 +26,7 @@ class CutService(
     private val copyUtilService: CopyUtilService,
 ){
 
-    fun cutFolders(cutRequest: FileCopyRequest): Collection<FolderDTO> {
+    fun cutFolders(cutRequest: FileCopyRequest): FolderDTO {
         val source = this.findFolderById(cutRequest.from)
         val destination = this.findFolderById(cutRequest.to)
 
@@ -46,7 +46,7 @@ class CutService(
         copyUtilService.canCutFolder(source, destination)
     }
 
-    private fun performCutFolderOperation(source: Folder, destination: Folder, folders: Collection<Folder>): Collection<FolderDTO> {
+    private fun performCutFolderOperation(source: Folder, destination: Folder, folders: Collection<Folder>): FolderDTO {
         val cutSize = folders.sumOf { it.summary.size }
         val folderIds = folders.map { it.id!! }.toSet()
 
@@ -66,9 +66,8 @@ class CutService(
             parentFolder = destination.id
         } }
 
-        folderRepository.saveAll(mutableSetOf(source, destination))
-        return folderRepository.saveAll(cutFolders)
-            .map { FolderMapper.toFolderDTO(it, emptyList()) }
+        val savedFolders = folderRepository.saveAll(mutableSetOf(source, destination))
+        return FolderMapper.toFolderDTO(savedFolders[0], emptySet())
     }
 
     fun cutFiles(copyRequest: FileCopyRequest): Collection<FileDTO> {

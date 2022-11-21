@@ -10,6 +10,7 @@ import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
 import com.kio.mappers.FileMapper
+import com.kio.mappers.FolderMapper
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.BadRequestException
@@ -33,6 +34,11 @@ class CopyService(
 
     fun copyFolders(copyRequest: FileCopyRequest): Collection<FolderDTO> {
         val source = this.findFolderById(copyRequest.from)
+
+        if (!source.subFolders.containsAll(copyRequest.items)) {
+            throw BadRequestException("At least one of the folder does not belong to source.")
+        }
+
         val destination = this.findFolderById(copyRequest.to)
         val foldersToCopy = folderRepository.findByIdIsIn(copyRequest.items)
 
@@ -47,11 +53,54 @@ class CopyService(
             throw InsufficientStorageException("Owner of this unit has ran out space")
         }
 
-        return emptyList()
+        val folderCopies = folderRepository.findByIdIsIn(copyRequest.items)
+            .map { copyUtilService.cloneFolder(it, destination) }
+
+        val savedFolderCopies = folderRepository.saveAll(folderCopies)
+        this.performCopyFolders(savedFolderCopies)
+
+        folderRepository.save(destination.apply {
+            subFolders.addAll(savedFolderCopies.map { it.id!! })
+        })
+
+        return savedFolderCopies.map { FolderMapper.toFolderDTO(it, emptySet()) }
     }
 
-    private fun performCopyFoldersOperation(source: Folder, destination: Folder, folders: Collection<String>): Collection<FolderDTO> {
-        return emptyList()
+    private fun performCopyFolders(foldersToCopy: Collection<Folder>) {
+        for (copy in foldersToCopy) {
+            val fileCopies = fileRepository.findByIdIsIn(copy.files)
+                .map {
+                    val bucketKey = "${copy.id}/${UUID.randomUUID()}"
+
+                    val copyObjectRequest = CopyObjectRequest().apply {
+                        destinationBucketName = bucketConfigurationProperties.filesBucket
+                        sourceBucketName = bucketConfigurationProperties.filesBucket
+                        sourceKey = it.bucketKey
+                        destinationKey = bucketKey
+                    }
+
+                    s3.copyObject(copyObjectRequest)
+
+                    copyUtilService.cloneFile(it, copy, bucketKey)
+                }
+
+            val savedFileCopies = fileRepository.saveAll(fileCopies)
+            val folderCopies = folderRepository.findByIdIsIn(copy.subFolders)
+                .map { copyUtilService.cloneFolder(it, copy) }
+
+            val savedFolderCopies = folderRepository.saveAll(folderCopies)
+
+            val fileIds = savedFileCopies.map { it.id!! }.toMutableSet()
+            val folderIds = savedFolderCopies.map { it.id!! }.toMutableSet()
+
+            copy.apply {
+                files = fileIds
+                subFolders = folderIds
+            }
+
+            folderRepository.save(copy)
+            this.performCopyFolders(savedFolderCopies)
+        }
     }
 
 
