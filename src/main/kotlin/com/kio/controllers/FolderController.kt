@@ -1,6 +1,6 @@
 package com.kio.controllers
 
-import com.kio.dto.request.folder.FolderEditRequest
+import com.kio.dto.ModifyResourceRequest
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
 import com.kio.dto.response.UnitSizeDTO
@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
 
 @RestController
 @RequestMapping("/api/v1/folders")
@@ -37,6 +38,12 @@ class FolderController(private val folderService: FolderService) {
         val createdFolderDTO = folderService.save(id, name)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(createdFolderDTO)
+    }
+
+    @PatchMapping(path = ["/edit"])
+    fun edit(@RequestBody @Valid request: ModifyResourceRequest): ResponseEntity<FolderDTO> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(folderService.edit(request))
     }
 
     @GetMapping(path = ["/{id}/sub-folders"])
@@ -75,13 +82,6 @@ class FolderController(private val folderService: FolderService) {
         folderService.fave(folders)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
-    }
-
-    @PatchMapping(path = ["/{id}/edit"])
-    fun edit(@PathVariable id: String, @RequestBody request: FolderEditRequest): ResponseEntity<FolderDTO> {
-        val dto = folderService.edit(id, request)
-        return ResponseEntity.status(HttpStatus.OK)
-            .body(dto)
     }
 
     @DeleteMapping(path = ["/{id}"])

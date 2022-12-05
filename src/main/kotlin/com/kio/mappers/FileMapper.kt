@@ -17,7 +17,8 @@ object FileMapper {
         contentType = file.contentType,
         details = file.details,
         createdAt = file.metadata.createdAt!!.format(formatter),
-        lastModified = file.metadata.lastModifiedDate!!.format(formatter)
+        lastModified = file.metadata.lastModifiedDate!!.format(formatter),
+        visibility = file.visibility
     )
 
 }

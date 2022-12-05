@@ -1,6 +1,7 @@
 package com.kio.dto.response
 
 import com.kio.entities.details.FolderDetails
+import com.kio.entities.enums.FileVisibility
 
 data class FolderDTO(
     val id: String,
@@ -10,4 +11,5 @@ data class FolderDTO(
     val createdAt: String,
     val lastModified: String,
     val contributors: Collection<ContributorDTO>,
+    val visibility: FileVisibility
 )

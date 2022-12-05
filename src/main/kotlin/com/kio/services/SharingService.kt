@@ -7,6 +7,7 @@ import com.kio.dto.request.ShareRequest
 import com.kio.entities.SharedResource
 import com.kio.repositories.FolderRepository
 import com.kio.shared.enums.ResourceType
+import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
@@ -51,7 +52,8 @@ class SharingService(
         val content = s3.getObject(filesBucket, file.bucketKey)
             .objectContent
 
-        return StaticResponseDTO(file.contentType, content)
+        val body = FileUtils.getStreamingResponseBodyFromObjectContent(content)
+        return StaticResponseDTO(file.contentType, body)
     }
 
     private fun getDuration(timeUnit: TimeUnit, duration: Long): Duration {

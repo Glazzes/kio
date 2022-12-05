@@ -1,0 +1,3 @@
+kio:
+  messages:
+    shortname: Must be between 3 and 50 characters long

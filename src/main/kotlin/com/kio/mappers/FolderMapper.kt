@@ -18,6 +18,8 @@ object FolderMapper {
         createdAt = folder.metadata.createdAt!!.format(formatter),
         lastModified = folder.metadata.lastModifiedDate!!.format(formatter),
         summary = folder.summary,
-        contributors = contributors)
+        contributors = contributors,
+        visibility = folder.visibility
+    )
 
 }

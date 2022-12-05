@@ -1,6 +1,7 @@
 package com.kio.dto.response
 
 import com.kio.entities.details.FileDetails
+import com.kio.entities.enums.FileVisibility
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -12,5 +13,6 @@ data class FileDTO(
     val contentType: String,
     val details: FileDetails,
     val createdAt: String,
-    val lastModified: String
+    val lastModified: String,
+    val visibility: FileVisibility
 )

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 
 @RestController
 @RequestMapping("/api/v1/sharing")
@@ -27,11 +28,11 @@ class SharingController(
     }
 
     @GetMapping(path = ["/file/{id}"])
-    fun findById(@PathVariable id: String): ResponseEntity<InputStreamResource> {
+    fun findById(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
         val static = sharingService.findById(id)
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
+            .body(static.responseBody)
     }
 
 }

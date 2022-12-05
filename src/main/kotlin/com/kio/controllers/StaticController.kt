@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 import javax.servlet.http.HttpServletResponse
 
 @RestController
@@ -17,30 +18,29 @@ import javax.servlet.http.HttpServletResponse
 class StaticController(private val staticService: StaticService){
 
     @GetMapping(path = ["/file/{id}"])
-    fun downloadFileById(@PathVariable id: String): ResponseEntity<InputStreamResource> {
+    fun downloadFileById(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
         val dto = staticService.downloadFileById(id)
-        val fileToDownload = dto.inputStream
 
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(dto.contentType))
-            .body(InputStreamResource(fileToDownload))
+            .body(dto.responseBody)
     }
 
     @GetMapping(path = ["/file/{id}/thumbnail"])
-    fun downloadThumbnailByFileId(@PathVariable id: String): ResponseEntity<InputStreamResource> {
+    fun downloadThumbnailByFileId(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
         val dto = staticService.downloadThumbnail(id)
-        val fileToDownload = dto.inputStream
 
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(dto.contentType))
-            .body(InputStreamResource(fileToDownload))
+            .body(dto.responseBody)
     }
 
     @GetMapping(path = ["/folder/{id}"])
-    fun downloadFolderById(@PathVariable id: String, response: HttpServletResponse): ResponseEntity<Unit> {
-        staticService.downloadFolderById(id, response)
+    fun downloadFolderById(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
+        val dto = staticService.downloadFolderById(id)
         return ResponseEntity.status(HttpStatus.OK)
-            .build()
+            .contentType(MediaType.valueOf(dto.contentType))
+            .body(dto.responseBody)
     }
 
 }

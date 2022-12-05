@@ -11,12 +11,12 @@ import com.kio.entities.enums.Permission
 import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.shared.exception.NotFoundException
+import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import org.springframework.stereotype.Service
-import java.io.BufferedInputStream
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import javax.servlet.http.HttpServletResponse
 
 @Service
 class StaticService(
@@ -41,9 +41,8 @@ class StaticService(
             val s3Object = s3.getObject(buckets.filesBucket, file.bucketKey) ?:
                 throw NotFoundException("This file does not exists")
 
-            val content = s3Object.objectContent
-
-            return StaticResponseDTO(file.contentType, content)
+            val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Object.objectContent)
+            return StaticResponseDTO(file.contentType, body)
         }catch (e: AmazonServiceException) {
             throw NotFoundException(e.message)
         }
@@ -61,24 +60,30 @@ class StaticService(
             val s3Object = s3.getObject(buckets.filesBucket, file.details.thumbnailKey) ?:
                 throw NotFoundException("This file does not exists")
 
-            val content = s3Object.objectContent
-            return StaticResponseDTO(file.contentType, content)
+            val response = FileUtils.getStreamingResponseBodyFromObjectContent(s3Object.objectContent)
+            return StaticResponseDTO(file.contentType, response)
         }catch (e: AmazonServiceException) {
             throw NotFoundException(e.message)
         }
     }
 
-    fun downloadFolderById(id: String, response: HttpServletResponse) {
+    fun downloadFolderById(id: String): StaticResponseDTO {
         val folder = folderRepository.findById(id)
             .orElseThrow { NotFoundException("Could not found folder with id $id") }
 
         PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
+        // response.setHeader("Content-Disposition", "attachment;filename=${folder.name}.zip")
+        val body = this.writeZipFile(folder)
+        return StaticResponseDTO("application/zip", body)
+    }
 
-        response.setHeader("Content-Disposition", "attachment;filename=${folder.name}.zip")
-
-        val zos = ZipOutputStream(response.outputStream)
-        this.zipFoldersRecursively("", folder, zos)
-        zos.close()
+    private fun writeZipFile(folder: Folder) = StreamingResponseBody { out ->
+        out.use {
+            val zipOutputStream = ZipOutputStream(it)
+            zipOutputStream.use { zos ->
+                zipFoldersRecursively("", folder, zos)
+            }
+        }
     }
 
     private fun zipFoldersRecursively(rootName: String, folder: Folder, zos: ZipOutputStream) {
@@ -86,14 +91,14 @@ class StaticService(
         val files = fileRepository.findByIdIsIn(folder.files)
 
         val currentFolderName = "${rootName}/${folder.name}"
-        files.forEach { this.writeS3ObjectToZip(currentFolderName, it, zos) }
+        files.forEach { this.writeFileContentToZipEntry(currentFolderName, it, zos) }
 
         for(subFolder in subFolders) {
             this.zipFoldersRecursively(currentFolderName, subFolder, zos)
         }
     }
 
-    private fun writeS3ObjectToZip(rootName: String, file: File, zos: ZipOutputStream) {
+    private fun writeFileContentToZipEntry(rootName: String, file: File, zos: ZipOutputStream) {
         val content = s3.getObject(buckets.filesBucket, file.bucketKey)
             .objectContent
             .delegateStream
@@ -103,7 +108,7 @@ class StaticService(
             zos.putNextEntry(entry)
 
             // I have tried many values but only 4 and 8 will not turn out in a "corrupted" file
-            val bytes = ByteArray(8)
+            val bytes = ByteArray(1024)
             while (it.read(bytes) != -1) {
                 zos.write(bytes)
             }

@@ -7,6 +7,7 @@ import com.kio.dto.response.StaticResponseDTO
 import com.kio.entities.User
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.NotFoundException
+import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -44,13 +45,15 @@ class ProfilePictureService (
 
     fun findDefault(): StaticResponseDTO {
         val s3Picture = s3.getObject(bucketProperties.filesBucket, defaultProfilePictureKey)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
+        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
+        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
     }
 
     fun findMine(): StaticResponseDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val s3Picture = s3.getObject(bucketProperties.filesBucket, authenticatedUser.profilePictureBucketKey)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
+        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
+        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
     }
 
     /*
@@ -66,7 +69,8 @@ class ProfilePictureService (
     fun findByUserId(id: String): StaticResponseDTO {
         val user = this.findUser(id)
         val s3Picture = s3.getObject(bucketProperties.filesBucket, user.profilePictureBucketKey)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
+        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
+        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
     }
 
     private fun findUser(id: String): User {

@@ -1,8 +1,8 @@
 package com.kio.dto.response
 
-import java.io.InputStream
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 
 data class StaticResponseDTO(
     val contentType: String,
-    val inputStream: InputStream
+    val responseBody: StreamingResponseBody
 )

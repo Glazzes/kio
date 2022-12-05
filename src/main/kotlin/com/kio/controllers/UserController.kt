@@ -2,11 +2,13 @@ package com.kio.controllers
 
 import com.kio.dto.response.UserDTO
 import com.kio.dto.request.SignUpRequest
+import com.kio.dto.response.ExistsResponseDTO
 import com.kio.services.UserService
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.security.Principal
 import javax.validation.Valid
 
@@ -24,9 +26,15 @@ class UserController(
     }
 
     @GetMapping
-    fun findByUsernameOrEmail(@RequestParam(name = "q") query: String): ResponseEntity<UserDTO> {
+    fun findByUsernameOrEmail(@RequestParam username: String?, @RequestParam email: String?): ResponseEntity<ExistsResponseDTO> {
         return ResponseEntity.status(HttpStatus.OK)
-            .body(userService.findByUsernameOrEmail(query))
+            .body(userService.existsByUsernameOrEmail(username, email))
+    }
+
+    @PatchMapping("/edit")
+    fun edit(@RequestParam @Valid request: SignUpRequest, @RequestParam file: MultipartFile): ResponseEntity<UserDTO> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(userService.edit(request, file))
     }
 
     @GetMapping(path = ["/me"])
@@ -37,7 +45,7 @@ class UserController(
             id = currentUser.id!!,
             username = currentUser.username,
             email = currentUser.email,
-            profilePictureId = currentUser.profilePictureBucketKey
+            hasProfilePicture = currentUser.profilePictureBucketKey != null
         )
 
         return ResponseEntity.status(HttpStatus.OK)

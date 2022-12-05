@@ -1,14 +1,14 @@
 package com.kio.configuration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.kio.dto.request.SignUpRequest
 import com.kio.dto.request.file.FileUploadRequest
-import com.kio.repositories.UserRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
 
 @Configuration
-class ConverterConfiguration(private val userRepository: UserRepository) {
+class MVCConfiguration {
     private val objectMapper = jacksonObjectMapper()
 
     /*
@@ -20,6 +20,15 @@ class ConverterConfiguration(private val userRepository: UserRepository) {
         return object : Converter<String, FileUploadRequest> {
             override fun convert(source: String): FileUploadRequest? {
                 return objectMapper.readValue(source, FileUploadRequest::class.java)
+            }
+        }
+    }
+
+    @Bean
+    fun stringToSignUpRequest(): Converter<String, SignUpRequest> {
+        return object : Converter<String, SignUpRequest> {
+            override fun convert(source: String): SignUpRequest? {
+                return objectMapper.readValue(source, SignUpRequest::class.java)
             }
         }
     }

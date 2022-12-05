@@ -24,20 +24,13 @@ class SpaceService(
     }
 
     fun calculateFolderSize(folder: Folder): Long {
-        val size = calculateSizeRecursively(folder.subFolders)
-        return size + folder.summary.size
-    }
-
-    private fun calculateSizeRecursively(folderIds: Collection<String>): Long {
-        val subFolders = folderRepository.findByIdIsIn(folderIds)
-        val subFoldersSize = subFolders.sumOf { it.summary.size }
-        val subFolderIds = subFolders.map { it.subFolders }.flatten()
-
-        if(subFolderIds.isNotEmpty()) {
-            return subFoldersSize + calculateSizeRecursively(subFolderIds)
+        val subFolders = folderRepository.findByIdIsIn(folder.subFolders)
+        var result: Long = 0
+        for (sub in subFolders) {
+            result += calculateFolderSize(sub)
         }
 
-        return subFoldersSize
+        return folder.summary.size + result
     }
 
 }

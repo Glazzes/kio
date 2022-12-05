@@ -3,7 +3,7 @@ package com.kio.services
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.kio.configuration.properties.BucketConfigurationProperties
-import com.kio.dto.request.folder.FolderEditRequest
+import com.kio.dto.ModifyResourceRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
@@ -19,7 +19,6 @@ import com.kio.repositories.FileRepository
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.NotFoundException
-import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
 import org.springframework.beans.factory.annotation.Value
@@ -81,22 +80,6 @@ class FolderService(
         folderRepository.saveAll(folders)
     }
 
-    fun edit(id: String, request: FolderEditRequest): FolderDTO {
-        val folder = this.findByInternal(id)
-        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
-
-        val folderNames = folderRepository.findFolderNamesByParentId(folder.id!!)
-            .map { it.getName() }
-
-        folder.apply {
-            this.name = FileUtils.getValidName(request.name, folderNames)
-            this.visibility = request.visibility
-        }
-
-        val editedFolder = folderRepository.save(folder)
-        return FolderMapper.toFolderDTO(editedFolder, this.findFolderContributors(editedFolder))
-    }
-
     fun findAuthenticatedUserUnit(): FolderDTO {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val userUnit = folderRepository.findByMetadataOwnerIdAndFolderType(authenticatedUser.id!!, FolderType.ROOT)
@@ -150,6 +133,41 @@ class FolderService(
         return folderPage.map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
     }
 
+    fun edit(request: ModifyResourceRequest): FolderDTO {
+        val folder = this.findByInternal(request.resourceId)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.MODIFY)
+
+        if(folder.visibility !== request.visibility) {
+            this.editSubFoldersAndFiles(folder, request.visibility)
+        }
+
+        val savedFolder = folderRepository.save(folder.apply {
+            visibility = request.visibility
+            name = request.name
+        })
+        return FolderMapper.toFolderDTO(savedFolder, emptySet())
+    }
+
+    private fun editSubFoldersAndFiles(folder: Folder, visibility: FileVisibility) {
+        val subFolders = folderRepository.findByIdIsIn(folder.subFolders).map {
+            it.visibility = visibility
+            it
+        }
+
+        val files = fileRepository.findByIdIsIn(folder.files).map {
+            it.visibility = visibility
+            it
+        }
+
+        folderRepository.saveAll(subFolders)
+        fileRepository.saveAll(files)
+
+        for(subFolder in subFolders) {
+            this.editSubFoldersAndFiles(subFolder, visibility)
+        }
+
+    }
+
     fun findFilesByFolderId(id: String, page: Int): Page<FileDTO> {
         val folder = this.findByInternal(id)
         val pageRequest = PageRequest.of(
@@ -179,7 +197,7 @@ class FolderService(
 
     fun findFolderSizeById(id: String): Long {
         val folder = this.findByInternal(id)
-       return spaceService.calculateFolderSize(folder)
+        return spaceService.calculateFolderSize(folder)
     }
 
     fun deleteFolder(id: String) {
@@ -194,6 +212,7 @@ class FolderService(
             subFolders.remove(folderToDelete.id)
         }
 
+        folderRepository.save(parentFolder)
         folderRepository.deleteAll(foldersToDelete)
     }
 

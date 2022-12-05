@@ -4,8 +4,8 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.kio.configuration.properties.BucketConfigurationProperties
+import com.kio.dto.ModifyResourceRequest
 import com.kio.dto.request.file.FileDeleteRequest
-import com.kio.dto.request.file.FileEditRequest
 import com.kio.dto.request.file.FileUploadRequest
 import com.kio.dto.response.FileDTO
 import com.kio.entities.File
@@ -44,11 +44,11 @@ class FileService(
         files: List<MultipartFile>,
         thumbnails: List<MultipartFile>?
     ): Collection<FileDTO> {
-        val folder = this.findFolderById(request.to)
-        val filesSize = files.sumOf { it.size }
+        val destination = this.findFolderById(request.to)
+        val uploadSize = files.sumOf { it.size }
 
-        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_WRITE)
-        val canUpload = spaceService.hasEnoughStorageToPerformOperation(folder, filesSize)
+        PermissionValidatorUtil.verifyFolderPermissions(destination, Permission.READ_WRITE)
+        val canUpload = spaceService.hasEnoughStorageToPerformOperation(destination, uploadSize)
 
         if(!canUpload) {
             throw InsufficientStorageException("The owner of this folder has ran out of storage space")
@@ -57,10 +57,10 @@ class FileService(
         val thumbnailMap = thumbnails?.associateBy { it.originalFilename } ?: emptyMap()
 
         val filesToSave: MutableList<File> = ArrayList()
-        val parentFolderNames = fileRepository.getFolderFilesNames(folder.files)
+        val parentFolderNames = fileRepository.getFolderFilesNames(destination.files)
 
         for(file in files) {
-            val bucketKey = "${folder.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
+            val bucketKey = "${destination.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
             this.saveS3Object(file, bucketKey)
 
             val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
@@ -93,9 +93,9 @@ class FileService(
                 contentType = file.contentType ?: "unknown",
                 size = file.size,
                 bucketKey = bucketKey,
-                parentFolder = folder.id!!,
-                visibility = folder.visibility,
-                metadata = FileMetadata(folder.metadata.ownerId),
+                parentFolder = destination.id!!,
+                visibility = destination.visibility,
+                metadata = FileMetadata(destination.metadata.ownerId),
             )
 
             filesToSave.add(fileToSave)
@@ -103,13 +103,31 @@ class FileService(
 
         val savedFiles = fileRepository.saveAll(filesToSave)
 
-        folderRepository.save(folder.apply {
+        destination.apply {
             this.files.addAll(savedFiles.map{ it.id!! })
             this.summary.files += filesToSave.size
-            this.summary.size += filesSize
-        })
+            this.summary.size += uploadSize
+        }
 
+        folderRepository.save(destination)
         return savedFiles.map { FileMapper.toFileDTO(it) }
+    }
+
+    fun edit(request: ModifyResourceRequest): FileDTO {
+        val parentFolder = this.findFolderById(request.from)
+
+        if(!parentFolder.files.contains(request.resourceId)) {
+            throw IllegalOperationException("This file ${request.resourceId} does not belong to folder ${request.from}")
+        }
+
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.MODIFY)
+
+        val file = this.findByIdInternal(request.resourceId).apply {
+            name = request.name
+            visibility = request.visibility
+        }
+
+        return FileMapper.toFileDTO(fileRepository.save(file))
     }
 
     fun findById(fileId: String): FileDTO {
@@ -138,23 +156,6 @@ class FileService(
         fileRepository.saveAll(files)
     }
 
-    fun edit(id: String, request: FileEditRequest): FileDTO {
-        val file = this.findByIdInternal(id)
-        val parentFolder = this.findFolderById(file.parentFolder)
-
-        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_WRITE)
-
-        val parentFilenames = fileRepository.findFilesNamesByParentId(file.parentFolder)
-            .map { it.getName() }
-
-        file.apply {
-            this.name = FileUtils.getValidName(request.name, parentFilenames)
-            this.visibility = request.visibility
-        }
-
-        return FileMapper.toFileDTO(file)
-    }
-
     fun deleteAll(deleteRequest: FileDeleteRequest) {
         val parentFolder = this.findFolderById(deleteRequest.from)
 
@@ -171,11 +172,13 @@ class FileService(
             keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
         }
 
-        folderRepository.save(parentFolder.apply {
+        parentFolder.apply {
             this.files.removeAll(deleteRequest.files.toSet())
             this.summary.files -= filesToDelete.size
             this.summary.size -= filesToDeleteSize
-        })
+        }
+
+        folderRepository.save(parentFolder)
 
         s3.deleteObjects(deleteObjects)
         fileRepository.deleteAll(filesToDelete)

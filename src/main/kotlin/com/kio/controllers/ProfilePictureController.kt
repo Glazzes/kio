@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 
 @RestController
 @RequestMapping("/api/v1/pfp")
@@ -20,35 +21,35 @@ class ProfilePictureController(
 ){
 
     @GetMapping(path = ["/default"])
-    fun findDefault(): ResponseEntity<InputStreamResource> {
+    fun findDefault(): ResponseEntity<StreamingResponseBody> {
         val static = profilePictureService.findDefault()
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
+            .body(static.responseBody)
     }
 
     @GetMapping(path = ["/me"])
-    fun findMine(): ResponseEntity<InputStreamResource> {
+    fun findMine(): ResponseEntity<StreamingResponseBody> {
         val static = profilePictureService.findMine()
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
+            .body(static.responseBody)
     }
 
     @PostMapping(path = ["/me"])
-    fun set(@RequestPart file: MultipartFile): ResponseEntity<InputStreamResource> {
+    fun set(@RequestPart file: MultipartFile): ResponseEntity<StreamingResponseBody> {
         val static = profilePictureService.findMine()
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
+            .body(static.responseBody)
     }
 
     @GetMapping(path = ["/user/{id}"])
-    fun findByUserId(@PathVariable id: String): ResponseEntity<InputStreamResource> {
+    fun findByUserId(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
         val static = profilePictureService.findByUserId(id)
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
-            .body(InputStreamResource(static.inputStream))
+            .body(static.responseBody)
     }
 
 }

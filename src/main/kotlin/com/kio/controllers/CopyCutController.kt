@@ -1,6 +1,7 @@
 package com.kio.controllers
 
 import com.kio.dto.request.file.FileCopyRequest
+import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
 import com.kio.services.CopyService
 import com.kio.services.CutService
@@ -26,7 +27,7 @@ class CopyCutController(
     }
 
     @PutMapping("/folders/cut")
-    fun cutFolders(@RequestBody @Valid request: FileCopyRequest): ResponseEntity<FolderDTO> {
+    fun cutFolders(@RequestBody @Valid request: FileCopyRequest): ResponseEntity<Collection<FolderDTO>> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(cutService.cutFolders(request))
     }
@@ -39,7 +40,7 @@ class CopyCutController(
     }
 
     @PutMapping(path = ["/files/cut"])
-    fun cutFiles(@RequestBody @Valid request: FileCopyRequest): ResponseEntity<*> {
+    fun cutFiles(@RequestBody @Valid request: FileCopyRequest): ResponseEntity<Collection<FileDTO>> {
         val cutFiles = cutService.cutFiles(request)
         return ResponseEntity.status(HttpStatus.OK)
             .body(cutFiles)

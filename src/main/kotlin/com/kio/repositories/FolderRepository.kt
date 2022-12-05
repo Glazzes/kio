@@ -3,6 +3,7 @@ package com.kio.repositories
 import com.kio.entities.Folder
 import com.kio.entities.enums.FolderType
 import com.kio.entities.projections.NameProjection
+import com.kio.entities.projections.SizeProjection
 import com.kio.entities.projections.SubFoldersProjection
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -19,7 +20,4 @@ interface FolderRepository : MongoRepository<Folder, String> {
 
     @Query(value = "{_id: {\$in: ?0}}")
     fun findSubFolderIdsByParentIds(ids: Collection<String>): Collection<SubFoldersProjection>
-
-    @Query(value = "{parentFolder: ?0}")
-    fun findFolderNamesByParentId(parentFolder: String): Collection<NameProjection>
 }

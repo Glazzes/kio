@@ -109,6 +109,7 @@ class CopyService(
         val destination = this.findFolderById(copyRequest.to)
 
         this.verifyCopyFilePermissions(source, destination, copyRequest.items)
+
         val filesToCopy = fileRepository.findByIdIsIn(copyRequest.items)
         val operationSize = filesToCopy.sumOf { it.size }
 
@@ -136,11 +137,6 @@ class CopyService(
         val filesToSave: MutableSet<File> = HashSet()
         val copySize = filesToCopy.sumOf { it.size }
 
-        destination.apply {
-            summary.files += filesToCopy.size
-            summary.files = summary.files + copySize
-        }
-
         for(file in filesToCopy) {
             val bucketKey = "${destination.id}/${UUID.randomUUID()}"
 
@@ -157,10 +153,16 @@ class CopyService(
             s3.copyObject(copyObjectRequest)
         }
 
+        val savedFiles = fileRepository.saveAll(filesToSave)
+        destination.apply {
+            summary.files += filesToSave.size
+            summary.size += copySize
+            files.addAll(savedFiles.map { it.id!! })
+        }
+
         folderRepository.save(destination)
 
-        return fileRepository.saveAll(filesToSave)
-            .map { FileMapper.toFileDTO(it) }
+        return savedFiles.map { FileMapper.toFileDTO(it) }
     }
 
     private fun findFolderById(id: String): Folder {

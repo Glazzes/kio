@@ -4,7 +4,6 @@ import com.kio.dto.request.file.FileCopyRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
-import com.kio.entities.details.FileMetadata
 import com.kio.entities.File
 import com.kio.entities.Folder
 import com.kio.entities.enums.Permission
@@ -26,7 +25,7 @@ class CutService(
     private val copyUtilService: CopyUtilService,
 ){
 
-    fun cutFolders(cutRequest: FileCopyRequest): FolderDTO {
+    fun cutFolders(cutRequest: FileCopyRequest): Collection<FolderDTO> {
         val source = this.findFolderById(cutRequest.from)
         val destination = this.findFolderById(cutRequest.to)
 
@@ -46,17 +45,17 @@ class CutService(
         copyUtilService.canCutFolder(source, destination)
     }
 
-    private fun performCutFolderOperation(source: Folder, destination: Folder, folders: Collection<Folder>): FolderDTO {
+    private fun performCutFolderOperation(source: Folder, destination: Folder, folders: Collection<Folder>): Collection<FolderDTO> {
         val cutSize = folders.sumOf { it.summary.size }
         val folderIds = folders.map { it.id!! }.toSet()
 
-        source.apply {
+        val updatedSource = source.apply {
             summary.size = summary.size - cutSize
             summary.folders = summary.folders - folders.size
             subFolders.removeAll(folderIds)
         }
 
-        destination.apply {
+        val updatedDestination = destination.apply {
             summary.size += cutSize
             summary.folders += folders.size
             subFolders.addAll(folderIds)
@@ -66,8 +65,9 @@ class CutService(
             parentFolder = destination.id
         } }
 
-        val savedFolders = folderRepository.saveAll(mutableSetOf(source, destination))
-        return FolderMapper.toFolderDTO(savedFolders[0], emptySet())
+        folderRepository.saveAll(mutableSetOf(updatedSource, updatedDestination))
+        return folderRepository.saveAll(cutFolders)
+            .map { FolderMapper.toFolderDTO(it, emptySet()) }
     }
 
     fun cutFiles(copyRequest: FileCopyRequest): Collection<FileDTO> {
@@ -113,14 +113,10 @@ class CutService(
             files.addAll(fileIds.toSet())
         }
 
-        val modifiedFiles = filesToCut.map { it.apply {
-            parentFolder = destination.id!!
-            metadata = FileMetadata(destination.metadata.ownerId)
-        } }
+        filesToCut.forEach { it.parentFolder = destination.id!! }
+        folderRepository.saveAll(listOf(source, destination))
 
-        folderRepository.saveAll(mutableListOf(source, destination))
-
-        return fileRepository.saveAll(modifiedFiles)
+        return fileRepository.saveAll(filesToCut)
             .map { FileMapper.toFileDTO(it) }
     }
 
