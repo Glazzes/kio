@@ -4,5 +4,5 @@ data class UserDTO(
     val id: String,
     val username: String,
     val email: String,
-    val hasProfilePicture: Boolean
+    val pictureId: String?
 )

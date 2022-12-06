@@ -14,8 +14,8 @@ class JwtToUserConverter(
 ): Converter<Jwt, AbstractAuthenticationToken> {
 
     override fun convert(source: Jwt): AbstractAuthenticationToken? {
-        val user = userRepository.findByUsername(source.subject)
-            ?: throw NotFoundException("User with username ${source.subject} was not found in jwt converter")
+        val user = userRepository.findById(source.subject)
+            .orElseThrow { NotFoundException("User with id ${source.subject} was not found in jwt converter") }
 
         return UsernamePasswordAuthenticationToken(user, user.password, emptyList())
     }

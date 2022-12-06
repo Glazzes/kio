@@ -50,8 +50,8 @@ class WebSecurityConfiguration(
             .httpBasic { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
-                it.antMatchers("/api/v1/users/me", "/api/v1/auth/revoke").authenticated()
-                    .antMatchers("/api/v1/auth/**", "/api/v1/users").permitAll()
+                it.antMatchers("/api/v1/users/me", "/api/v1/auth/revoke", "/api/v1/pfp/**").authenticated()
+                    .antMatchers("/api/v1/auth/**", "/api/v1/users", "/api/v1/users/exists").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer {

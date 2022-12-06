@@ -1,7 +1,7 @@
 package com.kio.configuration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.kio.dto.request.SignUpRequest
+import com.kio.dto.request.EditUserRequest
 import com.kio.dto.request.file.FileUploadRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,10 +25,10 @@ class MVCConfiguration {
     }
 
     @Bean
-    fun stringToSignUpRequest(): Converter<String, SignUpRequest> {
-        return object : Converter<String, SignUpRequest> {
-            override fun convert(source: String): SignUpRequest? {
-                return objectMapper.readValue(source, SignUpRequest::class.java)
+    fun stringToSignUpRequest(): Converter<String, EditUserRequest> {
+        return object : Converter<String, EditUserRequest> {
+            override fun convert(source: String): EditUserRequest? {
+                return objectMapper.readValue(source, EditUserRequest::class.java)
             }
         }
     }

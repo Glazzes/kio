@@ -3,6 +3,7 @@ package com.kio.services
 import com.kio.dto.request.auth.LoginDTO
 import com.kio.dto.request.auth.TokenResponseDTO
 import com.kio.entities.RefreshToken
+import com.kio.repositories.UserRepository
 import com.kio.shared.exception.InvalidTokenException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.SecurityUtil
@@ -25,6 +26,7 @@ import javax.naming.AuthenticationException
 @Service
 class AuthenticationService (
     private val jwtEncoder: JwtEncoder,
+    private val userRepository: UserRepository,
     private val authenticationManager: AuthenticationManager,
     @Qualifier("refreshTokenTemplate") private val redisTemplate: RedisTemplate<String, RefreshToken>
 ) {
@@ -37,10 +39,13 @@ class AuthenticationService (
             throw BadCredentialsException(e.message)
         }
 
-        val accessToken = this.issueTokenAccessToken(loginDTO.username)
+        val user = userRepository.findByUsername(loginDTO.username) ?:
+            throw NotFoundException("No user was found with username ${loginDTO.username}")
+
+        val accessToken = this.issueTokenAccessToken(user.id!!)
         val refreshToken = "${UUID.randomUUID()}-${UUID.randomUUID()}"
 
-        val refreshTokenEntity = RefreshToken(refreshToken, loginDTO.username, LocalDateTime.now())
+        val refreshTokenEntity = RefreshToken(refreshToken, user.id!!, LocalDateTime.now())
 
         redisTemplate.opsForValue()
             .set(refreshToken, refreshTokenEntity, Duration.ofDays(7L))

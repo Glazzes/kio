@@ -20,33 +20,9 @@ class ProfilePictureController(
     private val profilePictureService: ProfilePictureService
 ){
 
-    @GetMapping(path = ["/default"])
-    fun findDefault(): ResponseEntity<StreamingResponseBody> {
-        val static = profilePictureService.findDefault()
-        return ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.valueOf(static.contentType))
-            .body(static.responseBody)
-    }
-
-    @GetMapping(path = ["/me"])
-    fun findMine(): ResponseEntity<StreamingResponseBody> {
-        val static = profilePictureService.findMine()
-        return ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.valueOf(static.contentType))
-            .body(static.responseBody)
-    }
-
-    @PostMapping(path = ["/me"])
-    fun set(@RequestPart file: MultipartFile): ResponseEntity<StreamingResponseBody> {
-        val static = profilePictureService.findMine()
-        return ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.valueOf(static.contentType))
-            .body(static.responseBody)
-    }
-
-    @GetMapping(path = ["/user/{id}"])
-    fun findByUserId(@PathVariable id: String): ResponseEntity<StreamingResponseBody> {
-        val static = profilePictureService.findByUserId(id)
+    @GetMapping(path = ["/{userId}/{id}"])
+    fun findByUserId(@PathVariable userId: String, @PathVariable id: String): ResponseEntity<StreamingResponseBody> {
+        val static = profilePictureService.findByUserId(userId, id)
         return ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.valueOf(static.contentType))
             .body(static.responseBody)

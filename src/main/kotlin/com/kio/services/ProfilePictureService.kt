@@ -23,9 +23,10 @@ class ProfilePictureService (
 
     @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
 
-    fun save(file: MultipartFile) {
+    fun save(file: MultipartFile): String {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        val bucketKey = "${authenticatedUser.id!!}/${UUID.randomUUID()}"
+        val pictureId = UUID.randomUUID().toString()
+        val bucketKey = "${authenticatedUser.id!!}/${pictureId}"
 
         val metadata = ObjectMetadata().apply {
             contentType = file.contentType!!
@@ -34,41 +35,25 @@ class ProfilePictureService (
 
         s3.putObject(bucketProperties.profilePicturesBucket, bucketKey, file.inputStream, metadata)
 
-        if(authenticatedUser.profilePictureBucketKey == null) {
-            userRepository.save(authenticatedUser.apply { this.profilePictureBucketKey = bucketKey })
-            return
+        if(authenticatedUser.profilePictureId !== null) {
+            s3.deleteObject(bucketProperties.profilePicturesBucket, authenticatedUser.profilePictureId)
         }
 
-        s3.deleteObject(bucketProperties.profilePicturesBucket, authenticatedUser.profilePictureBucketKey)
-        userRepository.save(authenticatedUser.apply { this.profilePictureBucketKey = bucketKey })
+        return pictureId
     }
 
-    fun findDefault(): StaticResponseDTO {
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, defaultProfilePictureKey)
-        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
-    }
-
-    fun findMine(): StaticResponseDTO {
-        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, authenticatedUser.profilePictureBucketKey)
-        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
-    }
-
-    /*
     fun findById(id: String): StaticResponseDTO {
-        val profilePicture = profilePictureRepository.findById(id)
-            .orElseThrow { NotFoundException("Not profile picture was found with id $id") }
-
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, profilePicture.bucketKey)
-        return StaticResponseDTO(s3Picture.objectMetadata.contentType, s3Picture.objectContent)
-    }
-     */
-
-    fun findByUserId(id: String): StaticResponseDTO {
         val user = this.findUser(id)
-        val s3Picture = s3.getObject(bucketProperties.filesBucket, user.profilePictureBucketKey)
+        val s3Picture = s3.getObject(bucketProperties.profilePicturesBucket, user.profilePictureId)
+        val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
+        return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
+    }
+
+    fun findByUserId(userId: String, id: String): StaticResponseDTO {
+        val user = this.findUser(userId)
+
+        val pictureId = "${user.id}/${user.profilePictureId}"
+        val s3Picture = s3.getObject(bucketProperties.profilePicturesBucket, pictureId)
         val body = FileUtils.getStreamingResponseBodyFromObjectContent(s3Picture.objectContent)
         return StaticResponseDTO(s3Picture.objectMetadata.contentType, body)
     }

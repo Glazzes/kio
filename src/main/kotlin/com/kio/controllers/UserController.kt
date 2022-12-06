@@ -1,5 +1,6 @@
 package com.kio.controllers
 
+import com.kio.dto.request.EditUserRequest
 import com.kio.dto.response.UserDTO
 import com.kio.dto.request.SignUpRequest
 import com.kio.dto.response.ExistsResponseDTO
@@ -26,13 +27,19 @@ class UserController(
     }
 
     @GetMapping
-    fun findByUsernameOrEmail(@RequestParam username: String?, @RequestParam email: String?): ResponseEntity<ExistsResponseDTO> {
+    fun findByUsernameOrEmail(@RequestParam(name = "q") query: String): ResponseEntity<UserDTO> {
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(userService.findByUsernameOrEmail(query))
+    }
+
+    @GetMapping("/exists")
+    fun existsByUsernameOrEmail(@RequestParam username: String?, @RequestParam email: String?): ResponseEntity<ExistsResponseDTO> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(userService.existsByUsernameOrEmail(username, email))
     }
 
-    @PatchMapping("/edit")
-    fun edit(@RequestParam @Valid request: SignUpRequest, @RequestParam file: MultipartFile): ResponseEntity<UserDTO> {
+    @PatchMapping(path = ["/edit"])
+    fun edit(@RequestParam request: EditUserRequest, @RequestParam file: MultipartFile?): ResponseEntity<UserDTO> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(userService.edit(request, file))
     }
@@ -45,7 +52,7 @@ class UserController(
             id = currentUser.id!!,
             username = currentUser.username,
             email = currentUser.email,
-            hasProfilePicture = currentUser.profilePictureBucketKey != null
+            pictureId = currentUser.profilePictureId
         )
 
         return ResponseEntity.status(HttpStatus.OK)
