@@ -67,7 +67,7 @@ class CutService(
 
         folderRepository.saveAll(mutableSetOf(updatedSource, updatedDestination))
         return folderRepository.saveAll(cutFolders)
-            .map { FolderMapper.toFolderDTO(it, emptySet()) }
+            .map { FolderMapper.toFolderDTO(it) }
     }
 
     fun cutFiles(copyRequest: FileCopyRequest): Collection<FileDTO> {

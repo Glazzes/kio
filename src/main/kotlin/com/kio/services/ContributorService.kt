@@ -117,7 +117,7 @@ class ContributorService(
 
     private fun findContributorById(id: String): User {
         return userRepository.findById(id)
-            .orElseThrow { NotFoundException("We could not find contributor with $id") }
+            .orElseThrow { NotFoundException("We could not find a contributor with $id") }
     }
 
     private fun findFolderById(id: String): Folder {

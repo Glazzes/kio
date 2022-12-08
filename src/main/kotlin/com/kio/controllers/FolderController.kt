@@ -1,6 +1,7 @@
 package com.kio.controllers
 
 import com.kio.dto.ModifyResourceRequest
+import com.kio.dto.request.FavoriteRequest
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
 import com.kio.dto.response.UnitSizeDTO
@@ -77,9 +78,9 @@ class FolderController(private val folderService: FolderService) {
             .body(favorites)
     }
 
-    @PatchMapping(path = ["/fave"])
-    fun fave(@RequestBody folders: Collection<String>): ResponseEntity<Unit> {
-        folderService.fave(folders)
+    @PatchMapping(path = ["/favorite"])
+    fun favorite(@RequestBody @Valid request: FavoriteRequest): ResponseEntity<Unit> {
+        folderService.favorite(request)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

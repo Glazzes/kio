@@ -94,7 +94,7 @@ class AuthenticationService (
             .get(refreshToken) ?: throw NotFoundException("The refresh token has revoked or expired")
 
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        if(authenticatedUser.username != entity.subject) {
+        if(authenticatedUser.id != entity.subject) {
             throw IllegalAccessException("You can not revoke a token that's not yours")
         }
 

@@ -11,8 +11,7 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.data.mongodb.repository.Query
 
 interface FolderRepository : MongoRepository<Folder, String> {
-
-    fun findByMetadataOwnerIdAndIsFavorite(ownerId: String, isFavorite: Boolean, pageRequest: PageRequest): Page<Folder>
+    fun findByFavoritesContains(authenticatedUserId: String, pageRequest: PageRequest): Page<Folder>
     fun findByMetadataOwnerIdAndFolderType(id: String, folderType: FolderType): Folder?
     fun findByIdIsIn(ids: Collection<String>): Collection<Folder>
     fun findByIdIsIn(ids: Collection<String>, pageRequest: PageRequest): Page<Folder>

@@ -11,6 +11,7 @@ data class FileDTO(
     val name: String,
     val size: Long,
     val contentType: String,
+    val isFavorite: Boolean,
     val details: FileDetails,
     val createdAt: String,
     val lastModified: String,

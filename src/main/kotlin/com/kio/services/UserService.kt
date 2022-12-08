@@ -89,6 +89,7 @@ class UserService(
                 """.trimIndent()))
             }
 
+            /*
             val passwordRegex = Regex("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#\$%^&-+=()])(?=\\\\S+\$).{8,100}\$")
             if(!request.password.matches(passwordRegex)) {
                 shouldThrow = true
@@ -96,6 +97,7 @@ class UserService(
                     * Passwords must contain at one uppercase latter and one digit
                 """.trimIndent()))
             }
+             */
         }
 
         if(shouldThrow) {

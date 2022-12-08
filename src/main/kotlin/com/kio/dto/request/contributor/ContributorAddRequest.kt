@@ -6,7 +6,7 @@ import javax.validation.constraints.NotEmpty
 
 data class ContributorAddRequest(
 
-    @get:NotBlank(message = "Contributor id must not be a blank string")
+    @get:NotBlank(message = "Contributor id is required")
     val contributorId: String,
 
     @get:NotEmpty(message = "All contributors must have at least one permission")

@@ -14,9 +14,9 @@ class File(
     val details: FileDetails,
     val contentType: String,
     val size: Long,
-    var isFavorite: Boolean = false,
     val bucketKey: String,
     var parentFolder: String,
+    val favorites: MutableSet<String> = HashSet(),
     var visibility: FileVisibility,
     var metadata: FileMetadata,
 )

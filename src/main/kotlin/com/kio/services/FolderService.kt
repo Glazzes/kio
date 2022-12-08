@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.ModifyResourceRequest
+import com.kio.dto.request.FavoriteRequest
 import com.kio.dto.response.ContributorDTO
 import com.kio.dto.response.FileDTO
 import com.kio.dto.response.FolderDTO
@@ -31,7 +32,6 @@ import org.springframework.stereotype.Service
 class FolderService(
     private val folderRepository: FolderRepository,
     private val fileRepository: FileRepository,
-    private val userRepository: UserRepository,
     private val spaceService: SpaceService,
     private val bucketProperties: BucketConfigurationProperties,
     private val s3: AmazonS3
@@ -60,24 +60,32 @@ class FolderService(
             this.summary.folders++
         })
 
-        return FolderMapper.toFolderDTO(newFolder, emptyList())
+        return FolderMapper.toFolderDTO(newFolder)
     }
 
     fun findFavorites(): Collection<FolderDTO> {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val pageRequest = PageRequest.of(0, 20, Sort.Direction.DESC, "metadata.lastModifiedDate")
 
-        return folderRepository.findByMetadataOwnerIdAndIsFavorite(authenticatedUser.id!!, true, pageRequest)
-            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+        return folderRepository.findByFavoritesContains(authenticatedUser.id!!, pageRequest)
+            .map { FolderMapper.toFolderDTO(it) }
             .toSet()
     }
 
-    fun fave(folderIds: Collection<String>) {
-        val folders = folderRepository.findByIdIsIn(folderIds)
-            .filter { PermissionValidatorUtil.isResourceOwner(it) }
-            .map { it.apply { this.isFavorite = true } }
+    fun favorite(request: FavoriteRequest) {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        val folder = this.findByInternal(request.resourceId)
+        PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
 
-        folderRepository.saveAll(folders)
+        folder.apply {
+            if (request.favorite) {
+                favorites.add(authenticatedUser.id!!)
+            }else{
+                favorites.remove(authenticatedUser.id!!)
+            }
+        }
+
+        folderRepository.save(folder)
     }
 
     fun findAuthenticatedUserUnit(): FolderDTO {
@@ -86,10 +94,10 @@ class FolderService(
 
         if(userUnit == null) {
             val rootFolder = this.createRootFolder()
-            return FolderMapper.toFolderDTO(rootFolder, emptySet())
+            return FolderMapper.toFolderDTO(rootFolder)
         }
 
-        return FolderMapper.toFolderDTO(userUnit, emptySet())
+        return FolderMapper.toFolderDTO(userUnit)
     }
 
     private fun createRootFolder(): Folder {
@@ -108,13 +116,13 @@ class FolderService(
         val folder = this.findByInternal(id)
         PermissionValidatorUtil.verifyFolderPermissions(folder, Permission.READ_ONLY)
 
-        return FolderMapper.toFolderDTO(folder, this.findFolderContributors(folder))
+        return FolderMapper.toFolderDTO(folder)
     }
 
     fun findAuthenticatedUserSharedFolders(): Collection<FolderDTO> {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         return folderRepository.findBySharedWithContains(authenticatedUser.id!!)
-            .map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+            .map { FolderMapper.toFolderDTO(it) }
     }
 
     fun findSubFoldersByParentId(id: String, page: Int): Page<FolderDTO> {
@@ -130,7 +138,7 @@ class FolderService(
         val folderPage = folderRepository.findByIdIsIn(folder.subFolders, pageRequest)
         folderPage.removeAll { !PermissionValidatorUtil.verifyFolderPermissionsAsBoolean(it, Permission.READ_ONLY) }
 
-        return folderPage.map { FolderMapper.toFolderDTO(it, this.findFolderContributors(it)) }
+        return folderPage.map { FolderMapper.toFolderDTO(it) }
     }
 
     fun edit(request: ModifyResourceRequest): FolderDTO {
@@ -145,7 +153,7 @@ class FolderService(
             visibility = request.visibility
             name = request.name
         })
-        return FolderMapper.toFolderDTO(savedFolder, emptySet())
+        return FolderMapper.toFolderDTO(savedFolder)
     }
 
     private fun editSubFoldersAndFiles(folder: Folder, visibility: FileVisibility) {
@@ -178,12 +186,6 @@ class FolderService(
 
         return fileRepository.findByIdIsIn(folder.files, pageRequest)
             .map { FileMapper.toFileDTO(it) }
-    }
-
-    private fun findFolderContributors(folder: Folder): Collection<ContributorDTO> {
-        val contributors = userRepository.findByIdIn(folder.contributors.keys)
-        return contributors.map { ContributorDTO(it.id, it.username, it.profilePictureId) }
-            .toSet()
     }
 
     fun findUnitSize(): UnitSizeDTO {

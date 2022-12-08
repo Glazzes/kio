@@ -1,10 +1,12 @@
 package com.kio.controllers
 
 import com.kio.dto.ModifyResourceRequest
+import com.kio.dto.request.FavoriteRequest
 import com.kio.dto.request.file.FileDeleteRequest
 import com.kio.dto.request.file.FileUploadRequest
 import com.kio.dto.response.FileDTO
 import com.kio.services.FileService
+import org.springframework.data.domain.Page
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -37,16 +39,16 @@ class FileController (val fileService: FileService){
             .body(fileService.edit(request))
     }
 
-    @GetMapping(path = ["/favorites"])
-    fun findFavorites(): ResponseEntity<Collection<FileDTO>> {
+    @GetMapping(path = ["/user/favorites"])
+    fun findFavorites(): ResponseEntity<Page<FileDTO>> {
         val favorites = fileService.findFavorites()
         return ResponseEntity.status(HttpStatus.OK)
             .body(favorites)
     }
 
-    @PatchMapping(path = ["/fave"])
-    fun fave(@RequestBody files: Collection<String>): ResponseEntity<Unit> {
-        fileService.fave(files)
+    @PatchMapping(path = ["/favorite"])
+    fun fave(@RequestBody @Valid request: FavoriteRequest): ResponseEntity<Unit> {
+        fileService.favorite(request)
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
             .build()
     }

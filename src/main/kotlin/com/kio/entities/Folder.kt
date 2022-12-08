@@ -12,10 +12,10 @@ import org.springframework.data.mongodb.core.mapping.Document
 class Folder(
     @Id var id: String? = null,
     var name: String,
-    var isFavorite: Boolean = false,
     var folderType: FolderType = FolderType.REGULAR,
     var visibility: FileVisibility = FileVisibility.OWNER,
     var parentFolder: String? = null,
+    val favorites: MutableSet<String> = HashSet(),
     var subFolders: MutableSet<String> = HashSet(),
     var files: MutableSet<String> = HashSet(),
     val contributors: MutableMap<String, Set<Permission>> = HashMap(),

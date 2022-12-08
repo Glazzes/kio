@@ -63,7 +63,7 @@ class CopyService(
             subFolders.addAll(savedFolderCopies.map { it.id!! })
         })
 
-        return savedFolderCopies.map { FolderMapper.toFolderDTO(it, emptySet()) }
+        return savedFolderCopies.map { FolderMapper.toFolderDTO(it) }
     }
 
     private fun performCopyFolders(foldersToCopy: Collection<Folder>) {

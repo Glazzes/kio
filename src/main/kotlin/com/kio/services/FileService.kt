@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.ModifyResourceRequest
+import com.kio.dto.request.FavoriteRequest
 import com.kio.dto.request.file.FileDeleteRequest
 import com.kio.dto.request.file.FileUploadRequest
 import com.kio.dto.response.FileDTO
@@ -23,6 +24,7 @@ import com.kio.shared.utils.FileUtils
 import com.kio.shared.utils.MetadataUtil
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -138,22 +140,29 @@ class FileService(
         return FileMapper.toFileDTO(file)
     }
 
-    fun findFavorites(): Collection<FileDTO> {
+    fun findFavorites(): Page<FileDTO> {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val pageRequest = PageRequest.of(0, 20, Sort.Direction.DESC, "metadata.lastModifiedDate")
 
-        return fileRepository.findByMetadataOwnerIdAndIsFavorite(authenticatedUser.id!!, true, pageRequest)
+        return fileRepository.findByFavoritesContains(authenticatedUser.id!!, pageRequest)
             .map { FileMapper.toFileDTO(it) }
-            .toSet()
     }
 
-    fun fave(fileIds: Collection<String>) {
+    fun favorite(request: FavoriteRequest) {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
-        val files = fileRepository.findByIdIsIn(fileIds)
-            .filter { it.metadata.ownerId == authenticatedUser.id!! }
-            .map { it.apply { this.isFavorite = true } }
+        val file = this.findByIdInternal(request.resourceId)
+        val parentFolder = this.findFolderById(file.parentFolder)
+        PermissionValidatorUtil.verifyFolderPermissions(parentFolder, Permission.READ_ONLY)
 
-        fileRepository.saveAll(files)
+        file.apply {
+            if (request.favorite) {
+                favorites.add(authenticatedUser.id!!)
+            }else{
+                favorites.remove(authenticatedUser.id!!)
+            }
+        }
+
+        fileRepository.save(file)
     }
 
     fun deleteAll(deleteRequest: FileDeleteRequest) {

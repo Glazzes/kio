@@ -10,6 +10,5 @@ data class FolderDTO(
     val summary: FolderDetails,
     val createdAt: String,
     val lastModified: String,
-    val contributors: Collection<ContributorDTO>,
     val visibility: FileVisibility
 )
