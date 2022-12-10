@@ -19,7 +19,6 @@ class Folder(
     var subFolders: MutableSet<String> = HashSet(),
     var files: MutableSet<String> = HashSet(),
     val contributors: MutableMap<String, Set<Permission>> = HashMap(),
-    val sharedWith: MutableSet<String> = HashSet(),
     val metadata: FileMetadata,
     val summary: FolderDetails = FolderDetails()
 )

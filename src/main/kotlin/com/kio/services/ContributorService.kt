@@ -1,16 +1,14 @@
 package com.kio.services
 
-import com.kio.dto.response.ContributorDTO
 import com.kio.dto.request.contributor.ContributorDeleteRequest
 import com.kio.dto.request.contributor.ContributorUpdatePermissionsRequest
 import com.kio.dto.request.contributor.ContributorAddRequest
+import com.kio.dto.response.UserDTO
 import com.kio.entities.Folder
 import com.kio.entities.User
-import com.kio.entities.enums.FolderType
 import com.kio.mappers.UserMapper
 import com.kio.repositories.FolderRepository
 import com.kio.repositories.UserRepository
-import com.kio.shared.exception.AlreadyExistsException
 import com.kio.shared.exception.IllegalOperationException
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.PermissionValidatorUtil
@@ -23,42 +21,29 @@ class ContributorService(
     private val userRepository: UserRepository
 ) {
 
-    fun save(folderId: String, contributorRequest: ContributorAddRequest): ContributorDTO {
-        val folder = this.findFolderById(folderId)
-        PermissionValidatorUtil.isResourceOwner(folder)
-
-        if(folder.folderType == FolderType.ROOT) {
-            throw IllegalOperationException("You can not share your unit with someone else, consider sharing and inner folder")
+    fun save(request: ContributorAddRequest): Collection<UserDTO> {
+        val folder = this.findFolderById(request.folderId)
+        val isOwner = PermissionValidatorUtil.isResourceOwner(folder)
+        if (!isOwner) {
+            throw IllegalOperationException("You can not add a contributor to a folder you do not own")
         }
 
-        val contributor = this.findContributorById(contributorRequest.contributorId)
+        val contributors = userRepository.findByIdIn(request.contributorIds)
+        val contributorPermissions = contributors.associateBy({it.id!!}, {request.permissions})
+        val nestedFolders = this.findAllNestedFolders(folder)
+        nestedFolders.add(folder)
 
-        if(folder.contributors.containsKey(contributor.id!!)) {
-            throw AlreadyExistsException("This user is already a contributor of this folder, consider updating it")
-        }
+        folderRepository.saveAll(nestedFolders.map { it.apply {
+            this.contributors.putAll(contributorPermissions)
+        }})
 
-        folder.apply {
-            sharedWith.add(contributorRequest.contributorId)
-            contributors[contributor.id!!] = contributorRequest.permissions
-        }
-
-        folderRepository.save(folder)
-
-        this.addContributorToSubFolders(folder.subFolders, contributorRequest)
-        return UserMapper.toContributorDTO(contributor)
+        return contributors.map { UserMapper.toUserDTO(it) }
     }
 
-    private fun addContributorToSubFolders(folderIds: Collection<String>, request: ContributorAddRequest) {
-        val subFolders = folderRepository.findByIdIsIn(folderIds).map {
-            it.apply { it.contributors[request.contributorId] = request.permissions }
-        }
-
-        val subFolderIds = subFolders.map { it.subFolders }.flatten()
-        folderRepository.saveAll(subFolders)
-
-        if(subFolderIds.isNotEmpty()) {
-            addContributorToSubFolders(subFolderIds, request)
-        }
+    fun findFolderContributors(folderId: String): Collection<UserDTO> {
+        val folder = this.findFolderById(folderId)
+        val contributors = userRepository.findByIdIn(folder.contributors.keys)
+        return contributors.map { UserMapper.toUserDTO(it) }
     }
 
     fun update(request: ContributorUpdatePermissionsRequest) {
@@ -70,54 +55,55 @@ class ContributorService(
         })
     }
 
-    fun deleteVoluntarely(folderId: String) {
+    fun deleteContribtorByThemselves(folderId: String) {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val folder = this.findFolderById(folderId)
         val isContributor = PermissionValidatorUtil.isContributor(folder)
 
-        if(isContributor) {
-            folder.contributors.remove(authenticatedUser.id!!)
-            folderRepository.save(folder)
-        }
-
-        throw NotFoundException("You're not a contributor of this folder ${folder.id}")
-    }
-
-    fun delete(request: ContributorDeleteRequest) {
-        val (folderId, contributors) = request
-        val folder = this.findFolderById(folderId)
-
-        if(!folder.contributors.keys.containsAll(contributors)) {
-            throw IllegalOperationException("One or more contributors are no part of this folder $folderId")
+        if(!isContributor) {
+            throw NotFoundException("You're not a contributor of this folder ${folder.id}")
         }
 
         folderRepository.save(folder.apply {
-            sharedWith.removeAll(contributors.toSet())
-            contributors.forEach { this.contributors.remove(it) }
+            contributors.remove(authenticatedUser.id!!)
         })
-
-        this.deleteContributorFromSubFolders(folder.subFolders, request)
     }
 
-    private fun deleteContributorFromSubFolders(folderIds: Collection<String>, request: ContributorDeleteRequest) {
-        val subFolders = folderRepository.findByIdIsIn(folderIds).map {
-            it.apply {
-                this.sharedWith.removeAll(request.contributors.toSet())
-                request.contributors.forEach { key -> this.contributors.remove(key) }
-            }
+    fun delete(request: ContributorDeleteRequest) {
+        val folder = this.findFolderById(request.folderId)
+        val isOwner = PermissionValidatorUtil.isResourceOwner(folder)
+        if(!isOwner) {
+            throw IllegalOperationException("Can not delete a contributor from a folder you do not own")
         }
 
-        val subFolderIds = subFolders.map { it.subFolders }.flatten()
-        folderRepository.saveAll(subFolders)
-
-        if(subFolderIds.isNotEmpty()) {
-            deleteContributorFromSubFolders(subFolderIds, request)
+        if(!folder.contributors.keys.containsAll(request.contributors)) {
+            throw IllegalOperationException("One or more contributors are no part of this folder ${request.folderId}")
         }
+
+        val nestedFolders = this.findAllNestedFolders(folder)
+        nestedFolders.add(folder)
+
+        val foldersToDelete = nestedFolders.map { it.apply {
+            this.contributors.forEach { entry -> this.contributors.remove(entry.key) }
+        } }
+
+        folderRepository.saveAll(foldersToDelete)
     }
 
-    private fun findContributorById(id: String): User {
-        return userRepository.findById(id)
-            .orElseThrow { NotFoundException("We could not find a contributor with $id") }
+    private fun findAllNestedFolders(parentFolder: Folder): MutableCollection<Folder> {
+        if(parentFolder.subFolders.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        val context: MutableSet<Folder> = HashSet()
+        val subFolders = folderRepository.findByIdIsIn(parentFolder.subFolders)
+        for(subfolder in subFolders) {
+            val result = this.findAllNestedFolders(subfolder)
+            context.add(subfolder)
+            context.addAll(result)
+        }
+
+        return context
     }
 
     private fun findFolderById(id: String): Folder {

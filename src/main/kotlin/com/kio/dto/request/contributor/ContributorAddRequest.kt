@@ -6,8 +6,11 @@ import javax.validation.constraints.NotEmpty
 
 data class ContributorAddRequest(
 
-    @get:NotBlank(message = "Contributor id is required")
-    val contributorId: String,
+    @get:NotBlank(message = "Folder id is required")
+    val folderId: String,
+
+    @get:NotEmpty(message = "At least one contributor is needed")
+    val contributorIds: Collection<String>,
 
     @get:NotEmpty(message = "All contributors must have at least one permission")
     val permissions: Set<Permission>

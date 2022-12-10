@@ -57,15 +57,11 @@ class FileService(
         }
 
         val thumbnailMap = thumbnails?.associateBy { it.originalFilename } ?: emptyMap()
-
         val filesToSave: MutableList<File> = ArrayList()
-        val parentFolderNames = fileRepository.getFolderFilesNames(destination.files)
 
         for(file in files) {
             val bucketKey = "${destination.id}/${UUID.randomUUID()}-${UUID.randomUUID()}"
             this.saveS3Object(file, bucketKey)
-
-            val validName = FileUtils.getValidName(file.originalFilename!!, parentFolderNames.map { it.getName() })
 
             val details = FileDetails(
                 dimensions = request.details[file.originalFilename!!]?.dimensions,
@@ -90,7 +86,7 @@ class FileService(
             }
 
             val fileToSave = File(
-                name = validName,
+                name = file.originalFilename!!,
                 details = details,
                 contentType = file.contentType ?: "unknown",
                 size = file.size,

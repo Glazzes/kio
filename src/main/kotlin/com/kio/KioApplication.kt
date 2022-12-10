@@ -29,11 +29,7 @@ import org.springframework.scheduling.annotation.EnableAsync
 		DataSourceAutoConfiguration::class,
 		DataSourceTransactionManagerAutoConfiguration::class
 	])
-class KioApplication(s3PopulationConfig: S3PopulationConfig) {
-	init {
-	    s3PopulationConfig.saveDefaultProfilePicture()
-	}
-}
+class KioApplication
 
 fun main(args: Array<String>) {
 	runApplication<KioApplication>(*args)
