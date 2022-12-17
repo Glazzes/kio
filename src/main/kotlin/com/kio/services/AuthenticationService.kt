@@ -1,7 +1,7 @@
 package com.kio.services
 
 import com.kio.dto.request.auth.LoginDTO
-import com.kio.dto.request.auth.TokenResponseDTO
+import com.kio.dto.response.TokenResponseDTO
 import com.kio.entities.RefreshToken
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.InvalidTokenException

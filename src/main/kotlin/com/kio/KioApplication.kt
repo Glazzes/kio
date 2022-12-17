@@ -1,7 +1,6 @@
 package com.kio
 
 import com.kio.configuration.aws.AwsProperties
-import com.kio.configuration.population.S3PopulationConfig
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.configuration.properties.OAuth2ConfigurationProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication

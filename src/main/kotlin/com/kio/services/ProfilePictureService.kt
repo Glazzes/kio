@@ -21,8 +21,6 @@ class ProfilePictureService (
     private val userRepository: UserRepository,
 ){
 
-    @Value("\${kio.default-pfp-key}") private lateinit var defaultProfilePictureKey: String
-
     fun save(file: MultipartFile): String {
         val authenticatedUser = SecurityUtil.getAuthenticatedUser()
         val pictureId = UUID.randomUUID().toString()

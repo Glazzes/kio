@@ -1,6 +1,0 @@
-kio:
-  constraints:
-    username:
-      length: Username must be between 3 and 50 characters long
-  messages:
-    shortname: Must be between 3 and 50 characters long

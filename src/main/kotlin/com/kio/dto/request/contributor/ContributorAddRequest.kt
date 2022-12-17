@@ -5,14 +5,12 @@ import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotEmpty
 
 data class ContributorAddRequest(
-
-    @get:NotBlank(message = "Folder id is required")
+    @get:NotBlank(message = "{constraints.contributor.add.source.required}")
     val folderId: String,
 
-    @get:NotEmpty(message = "At least one contributor is needed")
+    @get:NotEmpty(message = "{constraints.contributor.add.users.required}")
     val contributorIds: Collection<String>,
 
-    @get:NotEmpty(message = "All contributors must have at least one permission")
+    @get:NotEmpty(message = "{constraints.contributor.add.permissions.required}")
     val permissions: Set<Permission>
-
 )

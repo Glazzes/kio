@@ -45,7 +45,6 @@ class CopyUtilService(
             subFolders = folder.subFolders,
             files = folder.files,
             contributors = parentFolder.contributors,
-            sharedWith = mutableSetOf(),
             metadata = FileMetadata(parentFolder.metadata.ownerId),
             summary = folder.summary
         ).apply {

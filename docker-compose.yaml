@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  kio:
+    container_name: kio
+    build: .
+    image: glazzes/kio-app
+    ports:
+      - "8080:8080"
+    entrypoint:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - localstack
+      - mongo
+      - redis
+
+  localstack:
+    container_name: localstack
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+
+  redis:
+    container_name: redis
+    image: redis-alpine:6.2.4
+    ports:
+      - "6379:6379"
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    ports:
+      - "27017:27017"

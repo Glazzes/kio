@@ -17,6 +17,19 @@ import javax.validation.Valid
 @RequestMapping("/api/v1/files")
 class FileController (val fileService: FileService){
 
+    @GetMapping("/{id}")
+    fun findById(@PathVariable(name = "id") fileId: String): ResponseEntity<FileDTO>{
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(fileService.findById(fileId))
+    }
+
+    @GetMapping("/user/favorites")
+    fun findFavorites(): ResponseEntity<Page<FileDTO>> {
+        val favorites = fileService.findFavorites()
+        return ResponseEntity.status(HttpStatus.OK)
+            .body(favorites)
+    }
+
     @PostMapping
     fun save(
         @RequestParam request: FileUploadRequest,
@@ -27,23 +40,10 @@ class FileController (val fileService: FileService){
             .body(fileService.save(request, files, thumbnails))
     }
 
-    @GetMapping(path = ["/{id}"])
-    fun findById(@PathVariable(name = "id") fileId: String): ResponseEntity<FileDTO>{
-        return ResponseEntity.status(HttpStatus.OK)
-            .body(fileService.findById(fileId))
-    }
-
     @PatchMapping(path = ["/edit"])
     fun edit(@RequestBody @Valid request: ModifyResourceRequest): ResponseEntity<FileDTO> {
         return ResponseEntity.status(HttpStatus.OK)
             .body(fileService.edit(request))
-    }
-
-    @GetMapping(path = ["/user/favorites"])
-    fun findFavorites(): ResponseEntity<Page<FileDTO>> {
-        val favorites = fileService.findFavorites()
-        return ResponseEntity.status(HttpStatus.OK)
-            .body(favorites)
     }
 
     @PatchMapping(path = ["/favorite"])

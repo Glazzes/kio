@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service
 class CutService(
     private val folderRepository: FolderRepository,
     private val fileRepository: FileRepository,
-    private val userRepository: UserRepository,
     private val copyUtilService: CopyUtilService,
 ){
 
@@ -118,13 +117,6 @@ class CutService(
 
         return fileRepository.saveAll(filesToCut)
             .map { FileMapper.toFileDTO(it) }
-    }
-
-    // repeated
-    private fun findFolderContributors(folder: Folder): Set<ContributorDTO> {
-        val contributors = userRepository.findByIdIn(folder.contributors.keys)
-        return contributors.map { ContributorDTO(it.id, it.username, "") }
-            .toSet()
     }
 
     private fun findFolderById(id: String): Folder {

@@ -5,6 +5,7 @@ import com.kio.dto.request.SignUpRequest
 import com.kio.dto.response.ExistsResponseDTO
 import com.kio.dto.response.UserDTO
 import com.kio.entities.User
+import com.kio.entities.enums.Plan
 import com.kio.mappers.UserMapper
 import com.kio.repositories.UserRepository
 import com.kio.shared.exception.BadRequestException
@@ -23,6 +24,17 @@ class UserService(
     val passwordEncoder: PasswordEncoder,
     val profilePictureService: ProfilePictureService
 ){
+
+    fun findAuthenticatedUser(): UserDTO {
+        val currentUser = SecurityUtil.getAuthenticatedUser()
+
+        return UserDTO(
+            id = currentUser.id!!,
+            username = currentUser.username,
+            email = currentUser.email,
+            pictureId = currentUser.profilePictureId
+        )
+    }
 
     fun save(signUpRequest: SignUpRequest): UserDTO {
         val encodedPassword = passwordEncoder.encode(signUpRequest.password)
@@ -103,6 +115,15 @@ class UserService(
         if(shouldThrow) {
             throw bindException
         }
+    }
+
+    fun updatePlan(plan: Plan): Long {
+        val authenticatedUser = SecurityUtil.getAuthenticatedUser()
+        userRepository.save(authenticatedUser.apply {
+            this.plan = plan
+        })
+
+        return plan.space
     }
 
     fun findByUsernameOrEmail(query: String): UserDTO {

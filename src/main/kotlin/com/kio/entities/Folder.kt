@@ -18,6 +18,7 @@ class Folder(
     val favorites: MutableSet<String> = HashSet(),
     var subFolders: MutableSet<String> = HashSet(),
     var files: MutableSet<String> = HashSet(),
+    val sharedWith: MutableSet<String> = HashSet(),
     val contributors: MutableMap<String, Set<Permission>> = HashMap(),
     val metadata: FileMetadata,
     val summary: FolderDetails = FolderDetails()

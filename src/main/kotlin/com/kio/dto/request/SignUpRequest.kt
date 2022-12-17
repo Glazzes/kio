@@ -9,18 +9,18 @@ import javax.validation.constraints.Pattern
 
 data class SignUpRequest(
 
-    @get:UsernameMustNotBeRegistered
-    @get:NotBlank(message = " * Username is required")
-    @get:Length(min = 3, max = 50, message = "* Username must be between 3 and 50 characters long")
+    @get:UsernameMustNotBeRegistered(message = "{constraints.username.registered}")
+    @get:NotBlank(message = "{constraints.username.required}")
+    @get:Length(min = 3, max = 50, message = "{constraints.username.length}")
     val username: String,
 
-    @get:EmailMustNotBeRegistered
-    @get:NotBlank(message = "* Email is required")
-    @get:Email(message = "* Invalid email i.e kiouser@gmail.com")
+    @get:EmailMustNotBeRegistered(message = "{constraints.password.registered}")
+    @get:NotBlank(message = "{constraints.email.required}")
+    @get:Email(message = "{constraints.email.invalid}")
     val email: String,
 
-    @get:NotBlank(message = "* A password is required")
-    @get:Length(min = 8, max = 100, message = "* Password must be at least 8 characters long and less than 100")
+    @get:NotBlank(message = "{constraints.password.required}")
+    @get:Length(min = 8, max = 100, message = "{constraints.password.length}")
     // @get:Pattern(regexp = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#\$%^&-+=()])(?=\\\\S+\$).{8,20}\$", message = "Password must contain at least one uppercase letter and one digit")
     val password: String
 )

@@ -1,6 +1,7 @@
 package com.kio.services
 
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.DeleteObjectRequest
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
 import com.kio.configuration.properties.BucketConfigurationProperties
 import com.kio.dto.ModifyResourceRequest
@@ -22,6 +23,7 @@ import com.kio.repositories.UserRepository
 import com.kio.shared.exception.NotFoundException
 import com.kio.shared.utils.PermissionValidatorUtil
 import com.kio.shared.utils.SecurityUtil
+import com.kio.valueobjects.DeleteContent
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -37,7 +39,7 @@ class FolderService(
     private val s3: AmazonS3
 ){
 
-    @Value("\${kio.default-page-size}")
+    @Value("\${kio.files.page-size}")
     private var defaultPageSize: Int? = null
 
     fun save(parentFolderId: String, name: String): FolderDTO {
@@ -207,15 +209,51 @@ class FolderService(
         PermissionValidatorUtil.verifyFolderPermissions(folderToDelete, Permission.DELETE)
 
         val parentFolder = this.findByInternal(folderToDelete.parentFolder!!)
-        val foldersToDelete = this.deleteContentsRecursively(folderToDelete)
+        val contentToDelete = this.deleteContents(folderToDelete)
+        contentToDelete.folders.add(folderToDelete)
+
+        if(contentToDelete.fileIds.isNotEmpty()) {
+            val filesToDelete = fileRepository.findAllById(contentToDelete.fileIds)
+            val deleteObjets = DeleteObjectsRequest(bucketProperties.filesBucket).apply {
+                keys = filesToDelete.map { DeleteObjectsRequest.KeyVersion(it.bucketKey) }
+            }
+
+            s3.deleteObjects(deleteObjets)
+            fileRepository.deleteAll(filesToDelete)
+        }
 
         parentFolder.apply {
             summary.folders = summary.folders - 1
             subFolders.remove(folderToDelete.id)
         }
 
+        folderRepository.deleteAll(contentToDelete.folders)
         folderRepository.save(parentFolder)
-        folderRepository.deleteAll(foldersToDelete)
+    }
+
+    private fun deleteContents(parentFolder: Folder): DeleteContent {
+        val deleteContent = DeleteContent()
+
+        if(parentFolder.files.isNotEmpty()) {
+
+            deleteContent.apply {
+                fileIds.addAll(parentFolder.files)
+            }
+        }
+
+        if(parentFolder.subFolders.isEmpty()) {
+            return deleteContent
+        }
+
+        val subFolders = folderRepository.findByIdIsIn(parentFolder.subFolders)
+        for (sub in subFolders) {
+            val subDeleteContent = this.deleteContents(sub)
+            deleteContent.folders.add(sub)
+            deleteContent.folders.addAll(subDeleteContent.folders)
+            deleteContent.fileIds.addAll(subDeleteContent.fileIds)
+        }
+
+        return deleteContent
     }
 
     fun deleteContentsRecursively(folder: Folder, container: MutableCollection<Folder> = mutableSetOf()): MutableCollection<Folder> {

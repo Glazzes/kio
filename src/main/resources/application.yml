@@ -1,6 +1,9 @@
 kio:
-  default-page-size: 20
-  default-pfp-key: kio-default-pfp
+  files:
+      page-size: 20
+  contributors:
+    page-size: 20
+    preview-page-size: 4
   oauth:
     client:
       id: kio

@@ -1,4 +1,4 @@
-package com.kio.dto.request.auth
+package com.kio.dto.response
 
 data class TokenResponseDTO(
     val accessToken: String,
